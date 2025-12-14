@@ -80,7 +80,9 @@ class StreamOperationsTest {
         return Arbitraries.of(
                 n -> n % 2 == 0,
                 n -> n % 2 != 0,
-                n -> n % 10 == 0
+                n -> n % 10 == 0,
+                _ -> false,
+                _ -> true
         );
     }
 
@@ -89,7 +91,8 @@ class StreamOperationsTest {
         return Arbitraries.of(
                 n -> LongStream.range(0L, Math.min(Math.abs(n), 5000)).boxed(),
                 n -> LongStream.range(0L, Math.min(Math.abs(n), 5000)).filter(i -> i % 100 == 0).boxed(),
-                n -> LongStream.of(Math.abs(n), 2L * Math.abs(n)).boxed()
+                n -> LongStream.of(Math.abs(n), 2L * Math.abs(n)).boxed(),
+                _ -> Stream.empty()
         );
     }
 }
