@@ -16,6 +16,7 @@
 
 package eu.cdevreeze.tryjava25.gatherers;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Gatherer;
@@ -56,8 +57,8 @@ public class StreamOperations {
     public static <T, R> Stream<R> flatMap(Stream<T> stream, Function<? super T, ? extends Stream<? extends R>> mapper) {
         Gatherer<T, ?, R> gatherer = Gatherer.ofSequential(
                 (ignoredState, element, downStream) -> {
-                    mapper.apply(element).forEach(downStream::push);
-                    return true;
+                    List<Boolean> canContinueFlags = mapper.apply(element).map(downStream::push).toList();
+                    return canContinueFlags.stream().allMatch(b -> b);
                 }
         );
         return stream.gather(gatherer);
