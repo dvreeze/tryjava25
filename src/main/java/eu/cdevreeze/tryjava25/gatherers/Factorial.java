@@ -94,6 +94,8 @@ public class Factorial {
         private UsingFoldingGatherer() {
         }
 
+        // "Collecting" using an intermediate operation, namely a folding Gatherer
+
         public static BigInteger factorial(int n) {
             Preconditions.checkArgument(n >= 0);
 

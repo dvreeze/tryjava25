@@ -54,6 +54,9 @@ public class StreamOperations {
         return stream.gather(gatherer);
     }
 
+    // Many subtle bugs in the flatMap implementation below.
+    // See https://dev.java/learn/api/streams/gatherers/ for more on this, and on Gatherers in general.
+
     public static <T, R> Stream<R> flatMap(Stream<T> stream, Function<? super T, ? extends Stream<? extends R>> mapper) {
         Gatherer<T, ?, R> gatherer = Gatherer.ofSequential(
                 (ignoredState, element, downStream) -> {

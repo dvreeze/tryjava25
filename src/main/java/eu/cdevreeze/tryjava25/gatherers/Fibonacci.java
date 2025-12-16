@@ -84,6 +84,8 @@ public class Fibonacci {
                     (acc, ignoredElement) -> acc.nextPair()
             );
 
+            // Somewhat of a hack to need a "dummy" collection of the right size
+
             return Stream.generate(Object::new)
                     .limit(size)
                     .gather(fibonacciGatherer)
@@ -108,6 +110,8 @@ public class Fibonacci {
                         return downStream.push(curr.v1());
                     }
             );
+
+            // Somewhat of a hack to need a "dummy" collection of the right size
 
             return Stream.generate(Object::new)
                     .limit(size)
