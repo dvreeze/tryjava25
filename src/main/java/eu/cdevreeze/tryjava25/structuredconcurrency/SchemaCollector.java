@@ -131,7 +131,7 @@ public class SchemaCollector {
 
     private static DocumentParser getDocumentParser() {
         // Expensive if called many times, but that does avoid thread-safety issues
-        // TODO Could scoped values somehow help out here?
+        // Scoped values (or "legacy" thread-locals) do not help here, since virtual threads are not pooled
 
         SAXParserFactory spf = SaxParsers.newNonValidatingSaxParserFactory();
         return DocumentParsers.builder(spf).removingInterElementWhitespace().build();
