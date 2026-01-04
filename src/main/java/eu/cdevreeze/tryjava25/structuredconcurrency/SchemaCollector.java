@@ -48,6 +48,8 @@ import static eu.cdevreeze.yaidom4j.dom.immutabledom.ElementPredicates.hasName;
  * See <a href="https://docs.oracle.com/en/java/javase/25/core/structured-concurrency.html#GUID-AA992944-AABA-4CBC-8039-DE5E17DE86DB">structured concurrency</a>.
  * Also see <a href="https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html#GUID-DC4306FC-D6C1-4BCC-AECE-48C32C1A8DAA">virtual threads</a>
  * and <a href="https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html#GUID-8AEDDBE6-F783-4D77-8786-AC5A79F517C0">virtual thread adoption guide</a>.
+ * For more on virtual threads, see for example
+ * <a href="https://rockthejvm.com/articles/the-ultimate-guide-to-java-virtual-threads">the ultimate guide to Java virtual threads</a>.
  *
  * @author Chris de Vreeze
  */
