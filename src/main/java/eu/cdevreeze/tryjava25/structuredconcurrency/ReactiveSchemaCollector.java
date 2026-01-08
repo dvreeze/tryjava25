@@ -45,7 +45,7 @@ import static eu.cdevreeze.yaidom4j.dom.immutabledom.ElementPredicates.hasName;
  * It uses {@link CompletableFuture}'s instead of structured concurrency (preview feature).
  * Hence, this program is written in a "functional reactive programming" style, somewhat reminiscent of
  * the functional reactive programming style offered by Scala libraries such as ZIO, Cats Effect and Monix,
- * but far less sophisticated and also less pure (because Futures as "program recipes" are not pure functions).
+ * but far less sophisticated and also less pure (because Futures as "program recipes" are not immutable values).
  *
  * @author Chris de Vreeze
  */
