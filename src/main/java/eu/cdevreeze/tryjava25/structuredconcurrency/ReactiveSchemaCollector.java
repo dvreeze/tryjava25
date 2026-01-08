@@ -70,9 +70,9 @@ public class ReactiveSchemaCollector {
     }
 
     private static CompletableFuture<ImmutableList<Document>> collectSchemaTask(Document schema, int maxDepth) {
-        return CompletableFuture
-                .runAsync(() -> Preconditions.checkArgument(maxDepth > 0, "max recursion depth <= 0 not allowed"))
-                .thenCompose(ignored -> collectImportsTask(schema))
+        Preconditions.checkArgument(maxDepth > 0, "max recursion depth <= 0 not allowed");
+
+        return collectImportsTask(schema)
                 .thenApply(ReactiveSchemaCollector::deduplicate)
                 .thenCompose(directlyImportedDocs -> {
                     if (directlyImportedDocs.isEmpty()) {
