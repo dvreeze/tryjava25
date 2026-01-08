@@ -75,10 +75,7 @@ public class SchemaCollector {
         // May import the same schema documents multiple times
         Preconditions.checkArgument(maxDepth > 0, "max recursion depth <= 0 not allowed");
 
-        List<Document> directlyImportedNewDocs = collectImports(schema)
-                .stream()
-                .gather(MyGatherers.distinctBy(doc -> doc.uriOption().orElseThrow()))
-                .toList();
+        List<Document> directlyImportedNewDocs = deduplicate(collectImports(schema));
 
         if (directlyImportedNewDocs.isEmpty()) {
             return ImmutableList.of(schema);
@@ -90,9 +87,7 @@ public class SchemaCollector {
         for (Document directlyImportedNewDoc : directlyImportedNewDocs) {
             result.addAll(collectSchema(directlyImportedNewDoc, maxDepth - 1));
         }
-        return result.stream()
-                .gather(MyGatherers.distinctBy(doc -> doc.uriOption().orElseThrow()))
-                .collect(ImmutableList.toImmutableList());
+        return deduplicate(result);
     }
 
     private static ImmutableList<Document> collectImports(Document schema) throws InterruptedException {
@@ -108,10 +103,7 @@ public class SchemaCollector {
 
         try (var scope = StructuredTaskScope.open(StructuredTaskScope.Joiner.<Document>allSuccessfulOrThrow())) {
             subtasks.forEach(scope::fork);
-            return scope.join()
-                    .map(StructuredTaskScope.Subtask::get)
-                    .gather(MyGatherers.distinctBy(doc -> doc.uriOption().orElseThrow()))
-                    .collect(ImmutableList.toImmutableList());
+            return deduplicate(scope.join().map(StructuredTaskScope.Subtask::get).toList());
         }
     }
 
@@ -137,6 +129,12 @@ public class SchemaCollector {
 
         SAXParserFactory spf = SaxParsers.newNonValidatingSaxParserFactory();
         return DocumentParsers.builder(spf).removingInterElementWhitespace().build();
+    }
+
+    private static ImmutableList<Document> deduplicate(List<Document> docs) {
+        return docs.stream()
+                .gather(MyGatherers.distinctBy(doc -> doc.uriOption().orElseThrow()))
+                .collect(ImmutableList.toImmutableList());
     }
 
     static void main(String[] args) throws InterruptedException {
