@@ -130,7 +130,7 @@ public class ReactiveSchemaCollector {
 
     private static DocumentParser getDocumentParser() {
         // Expensive if called many times, but that does avoid thread-safety issues
-        // Scoped values (or "legacy" thread-locals) do not help here, since virtual threads are not pooled
+        // Scoped values (or "legacy" thread-locals) do not help for virtual threads, since virtual threads are not pooled
 
         SAXParserFactory spf = SaxParsers.newNonValidatingSaxParserFactory();
         return DocumentParsers.builder(spf).removingInterElementWhitespace().build();
@@ -145,11 +145,7 @@ public class ReactiveSchemaCollector {
     private static CompletableFuture<ImmutableList<Document>> combine(List<CompletableFuture<ImmutableList<Document>>> futures) {
         return combine(
                 futures,
-                (docs1, docs2) ->
-                        ImmutableList.<Document>builder()
-                                .addAll(docs1)
-                                .addAll(docs2)
-                                .build(),
+                (docs1, docs2) -> ImmutableList.<Document>builder().addAll(docs1).addAll(docs2).build(),
                 ImmutableList.of()
         );
     }
