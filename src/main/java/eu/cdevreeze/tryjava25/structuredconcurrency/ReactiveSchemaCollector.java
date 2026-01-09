@@ -46,6 +46,21 @@ import static eu.cdevreeze.yaidom4j.dom.immutabledom.ElementPredicates.hasName;
  * Hence, this program is written in a "functional reactive programming" style, somewhat reminiscent of
  * the functional reactive programming style offered by Scala libraries such as ZIO, Cats Effect and Monix,
  * but far less sophisticated and also less pure (because Futures as "program recipes" are not immutable values).
+ * <p>
+ * This "functional reactive programming" style comes with a some restrictions that must be kept in mind,
+ * especially if we are used to a more imperative style of programming (which becomes attractive again with
+ * structured concurrency, which in Java 25 is still a preview feature).
+ * <p>
+ * First of all, if we create "CompletableFuture" instances but fail to connect them, some of them may become
+ * no-ops. Note that "CompletableFuture" instances are typically chained using methods such as "thenCompose",
+ * which is like a "flatMap" higher-order function in monadic data structures (such as collections, ZIO effects
+ * etc.). Also be careful not to combine "eager" and "lazy" code (the latter as "CompletableFuture"'s) where
+ * we want chains of "CompletableFuture" instances.
+ * <p>
+ * Second, make sure that code that must run within a single thread indeed runs in a single thread.
+ * An example could be code running within a transactional JPA/Hibernate EntityManager/Session.
+ * CompletableFuture chains typically use multiple threads (depending on the "Executor"'s used), thus
+ * violating single-threaded code execution.
  *
  * @author Chris de Vreeze
  */
@@ -156,6 +171,10 @@ public class ReactiveSchemaCollector {
             T defaultValue
     ) {
         // See https://www.baeldung.com/java-completablefuture-list-convert
+
+        // Note that arrays of parameterized types are not allowed; hence, the wildcard
+        // We need this array, though, to pass to method "CompletableFuture.allOf"
+        // Yet, on the other hand, we still have the variable "futures" of the parameterized type when we need it
         CompletableFuture<?>[] futuresArray = futures.toArray(new CompletableFuture<?>[0]);
 
         return CompletableFuture.allOf(futuresArray)
