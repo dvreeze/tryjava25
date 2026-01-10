@@ -51,16 +51,19 @@ import static eu.cdevreeze.yaidom4j.dom.immutabledom.ElementPredicates.hasName;
  * especially if we are used to a more imperative style of programming (which becomes attractive again with
  * structured concurrency, which in Java 25 is still a preview feature).
  * <p>
- * First of all, if we create "CompletableFuture" instances but fail to connect them, some of them may become
- * no-ops. Note that "CompletableFuture" instances are typically chained using methods such as "thenCompose",
+ * First of all, if we create `CompletableFuture` instances but fail to connect them, some of them may become
+ * no-ops. Note that `CompletableFuture` instances are typically chained using methods such as "thenCompose",
  * which is like a "flatMap" higher-order function in monadic data structures (such as collections, ZIO effects
- * etc.). Also be careful not to combine "eager" and "lazy" code (the latter as "CompletableFuture"'s) where
- * we want chains of "CompletableFuture" instances.
+ * etc.). Also be careful not to combine "eager" and "lazy" code (the latter as `CompletableFuture`'s) where
+ * we want chains of `CompletableFuture` instances.
  * <p>
  * Second, make sure that code that must run within a single thread indeed runs in a single thread.
  * An example could be code running within a transactional JPA/Hibernate EntityManager/Session.
- * CompletableFuture chains typically use multiple threads (depending on the "Executor"'s used), thus
+ * `CompletableFuture` chains typically use multiple threads (depending on the "Executor"'s used), thus
  * violating single-threaded code execution.
+ * <p>
+ * For a deep introduction to `CompletableFuture`, see
+ * <a href="https://concurrencydeepdives.com/guide-completable-future/">Guide to CompletableFuture</a>.
  *
  * @author Chris de Vreeze
  */
@@ -75,7 +78,7 @@ public class ReactiveSchemaCollector {
 
     private static final int MAX_DEPTH = 100;
 
-    private static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private static final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     private ReactiveSchemaCollector() {
     }
@@ -87,9 +90,11 @@ public class ReactiveSchemaCollector {
     private static CompletableFuture<ImmutableList<Document>> collectSchemaTask(Document schema, int maxDepth) {
         Preconditions.checkArgument(maxDepth > 0, "max recursion depth <= 0 not allowed");
 
+        System.out.printf("Current thread: %s; calling 'collectSchemaTask'; maxDepth: %d%n", Thread.currentThread(), maxDepth);
+
         return collectImportsTask(schema)
-                .thenApply(ReactiveSchemaCollector::deduplicate)
-                .thenCompose(directlyImportedDocs -> {
+                .thenApplyAsync(ReactiveSchemaCollector::deduplicate)
+                .thenComposeAsync(directlyImportedDocs -> {
                     if (directlyImportedDocs.isEmpty()) {
                         return CompletableFuture.completedFuture(ImmutableList.of(schema));
                     } else {
@@ -106,21 +111,21 @@ public class ReactiveSchemaCollector {
                         return combine(futures);
                     }
                 })
-                .thenApply(ReactiveSchemaCollector::deduplicate);
+                .thenApplyAsync(ReactiveSchemaCollector::deduplicate);
     }
 
     private static CompletableFuture<ImmutableList<Document>> collectImportsTask(Document schema) {
         return findImportsTask(schema)
-                .thenCompose(uris -> {
+                .thenComposeAsync(uris -> {
                     List<CompletableFuture<ImmutableList<Document>>> futures =
                             uris.stream().map(u -> parseSchemaTask(u).thenApply(ImmutableList::of)).toList();
                     return combine(futures);
                 })
-                .thenApply(ReactiveSchemaCollector::deduplicate);
+                .thenApplyAsync(ReactiveSchemaCollector::deduplicate);
     }
 
     private static CompletableFuture<Document> parseSchemaTask(URI schemaUrl) {
-        return CompletableFuture.supplyAsync(() -> parseSchema(schemaUrl), executor);
+        return CompletableFuture.supplyAsync(() -> parseSchema(schemaUrl), virtualThreadExecutor);
     }
 
     private static CompletableFuture<ImmutableList<URI>> findImportsTask(Document schema) {
