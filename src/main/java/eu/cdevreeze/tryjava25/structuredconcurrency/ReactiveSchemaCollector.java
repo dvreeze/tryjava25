@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BinaryOperator;
@@ -189,12 +188,12 @@ public class ReactiveSchemaCollector {
                 .thenApply(collection -> collection.stream().reduce(fn).orElse(defaultValue));
     }
 
-    static void main(String[] args) throws InterruptedException, ExecutionException {
+    static void main(String[] args) {
         Objects.checkIndex(0, args.length);
         URI uri = URI.create(args[0]);
 
         // Blocking call, waiting for the CompletableFuture chain to finish.
-        List<Document> docs = collectSchemaTask(uri).get();
+        List<Document> docs = collectSchemaTask(uri).join();
 
         System.out.println();
         docs.forEach(doc -> System.out.printf("Document URI: %s%n", doc.uriOption().orElseThrow()));
