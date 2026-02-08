@@ -16,11 +16,7 @@
 
 package eu.cdevreeze.tryjava25.gatherers;
 
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Gatherer;
-import java.util.stream.Stream;
+import module java.base;
 
 /**
  * Stream operations, such as "flatMap", "map" and "filter". These are far from production-ready implementations.

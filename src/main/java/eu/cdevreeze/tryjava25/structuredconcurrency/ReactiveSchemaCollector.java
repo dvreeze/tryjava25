@@ -16,25 +16,14 @@
 
 package eu.cdevreeze.tryjava25.structuredconcurrency;
 
+import module java.base;
+import module java.xml;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Document;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentParser;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentParsers;
 import eu.cdevreeze.yaidom4j.jaxp.SaxParsers;
-
-import javax.xml.XMLConstants;
-import javax.xml.namespace.QName;
-import javax.xml.parsers.SAXParserFactory;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.BinaryOperator;
-import java.util.stream.Collectors;
 
 import static eu.cdevreeze.yaidom4j.dom.immutabledom.ElementPredicates.hasName;
 

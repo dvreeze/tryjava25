@@ -16,14 +16,8 @@
 
 package eu.cdevreeze.tryjava25.gatherers;
 
+import module java.base;
 import com.google.common.base.Preconditions;
-
-import java.math.BigInteger;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Gatherer;
-import java.util.stream.Gatherers;
-import java.util.stream.IntStream;
 
 /**
  * Factorial implementations, with and without the use of Gatherers.

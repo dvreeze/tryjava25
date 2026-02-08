@@ -16,14 +16,12 @@
 
 package eu.cdevreeze.tryjava25.gatherers;
 
+import module java.base;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Report;
 import net.jqwik.api.Reporting;
 import net.jqwik.api.constraints.IntRange;
-
-import java.math.BigInteger;
-import java.util.function.Function;
 
 /**
  * Factorial property test.

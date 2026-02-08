@@ -16,11 +16,7 @@
 
 package eu.cdevreeze.tryjava25.structuredconcurrency;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Gatherer;
+import module java.base;
 
 /**
  * Custom {@link Gatherer} instances.

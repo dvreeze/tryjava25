@@ -16,13 +16,8 @@
 
 package eu.cdevreeze.tryjava25.gatherers;
 
+import module java.base;
 import net.jqwik.api.*;
-
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 /**
  * Stream operations test, showing how common Stream operations can be understood in terms of Gatherers.
