@@ -53,6 +53,10 @@ public class PiComputation {
                 .setMessage("Module path: {}")
                 .addArgument(System.getProperty("jdk.module.path"))
                 .log();
+        logger.atInfo()
+                .setMessage("Class path: {}")
+                .addArgument(System.getProperty("java.class.path"))
+                .log();
     }
 
     public static double pi(int numberOfIterations) {
