@@ -16,14 +16,11 @@
 
 package eu.cdevreeze.tryjava25.structuredconcurrency;
 
+import module eu.cdevreeze.yaidom4j;
 import module java.base;
-import module java.xml;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Document;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentParser;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentParsers;
-import eu.cdevreeze.yaidom4j.jaxp.SaxParsers;
+
+import java.util.Objects;
 
 import static eu.cdevreeze.yaidom4j.dom.immutabledom.ElementPredicates.hasName;
 

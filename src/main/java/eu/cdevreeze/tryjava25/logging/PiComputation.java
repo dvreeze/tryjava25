@@ -17,9 +17,8 @@
 package eu.cdevreeze.tryjava25.logging;
 
 import module java.base;
+import module org.slf4j;
 import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Computation of Pi, using the Leibniz Formula. This program is more about showing (JPMS-enabled) logging
