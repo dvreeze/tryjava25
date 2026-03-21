@@ -16,33 +16,41 @@
 
 package eu.cdevreeze.tryjava25.classfiles;
 
+import module java.base;
 import com.google.common.base.Preconditions;
-
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.constant.ClassDesc;
-import java.lang.reflect.AccessFlag;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Stream;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Utility methods to get all ancestor classes of a class, all implemented interfaces, etc.
- * This assumes a complete "universe" of {@link ClassModel} objects, as a sort of complete "classpath".
+ * <p>
+ * Of course, it is naive and very inefficient to "load" all classes (except for JDK classes) eagerly.
  *
  * @author Chris de Vreeze
  */
-public record ClassUniverse(Map<ClassDesc, ClassModel> universe) {
+public final class ClassUniverse {
 
-    public List<ClassModel> findAllSuperclasses(ClassModel classModel) {
-        Preconditions.checkArgument(isClassOrInterface(classModel));
+    private final ImmutableMap<ClassDesc, ClassModel> universe; // excludes JDK classes
+    private final FileSystem jrtFileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
 
-        return findAllSuperclassesOrSelf(classModel).stream().skip(1).toList();
+    public ClassUniverse(ImmutableMap<ClassDesc, ClassModel> universe) {
+        this.universe = universe;
     }
 
-    public List<ClassModel> findAllSuperclassesOrSelf(ClassModel classModel) {
+    public ImmutableMap<ClassDesc, ClassModel> getUniverse() {
+        return universe;
+    }
+
+    public ImmutableList<ClassModel> findAllSuperclasses(ClassModel classModel) {
+        Preconditions.checkArgument(isClassOrInterface(classModel));
+
+        return findAllSuperclassesOrSelf(classModel)
+                .stream()
+                .skip(1)
+                .collect(ImmutableList.toImmutableList());
+    }
+
+    public ImmutableList<ClassModel> findAllSuperclassesOrSelf(ClassModel classModel) {
         Preconditions.checkArgument(isClassOrInterface(classModel));
 
         Optional<ClassModel> superclassOption = classModel
@@ -53,10 +61,28 @@ public record ClassUniverse(Map<ClassDesc, ClassModel> universe) {
                         Stream.of(classModel),
                         superclassOption.map(c -> findAllSuperclassesOrSelf(c).stream()).orElse(Stream.empty())
                 )
-                .toList();
+                .collect(ImmutableList.toImmutableList());
     }
 
-    public List<ClassModel> findAllInterfaces(ClassModel classModel) {
+    public ImmutableList<ClassModel> findAllSupertypesOrSelf(ClassModel classModel) {
+        Preconditions.checkArgument(isClassOrInterface(classModel));
+
+        return Stream.concat(
+                        Stream.of(classModel),
+                        Stream.concat(
+                                findAllSuperclasses(classModel).stream(),
+                                findAllInterfaces(classModel).stream()
+                        )
+                )
+                .distinct()
+                .collect(ImmutableList.toImmutableList());
+    }
+
+    /**
+     * Finds all directly or indirectly extended/implemented interfaces. The result does not include this
+     * classModel if it is an interface.
+     */
+    public ImmutableList<ClassModel> findAllInterfaces(ClassModel classModel) {
         Preconditions.checkArgument(isClassOrInterface(classModel));
 
         // This finds all own implemented/extended interfaces, those of superclasses, and
@@ -68,10 +94,10 @@ public record ClassUniverse(Map<ClassDesc, ClassModel> universe) {
                 .distinct()
                 .flatMap(itf -> findAllExtendedInterfacesOrSelf(itf).stream())
                 .distinct()
-                .toList();
+                .collect(ImmutableList.toImmutableList());
     }
 
-    private List<ClassModel> findAllExtendedInterfacesOrSelf(ClassModel interfaceModel) {
+    private ImmutableList<ClassModel> findAllExtendedInterfacesOrSelf(ClassModel interfaceModel) {
         Preconditions.checkArgument(isInterface(interfaceModel));
 
         // Recursive
@@ -79,7 +105,7 @@ public record ClassUniverse(Map<ClassDesc, ClassModel> universe) {
                 Stream.of(interfaceModel),
                 interfaceModel.interfaces().stream()
                         .flatMap(itf -> findAllExtendedInterfacesOrSelf(resolveClass(itf)).stream())
-        ).toList();
+        ).collect(ImmutableList.toImmutableList());
     }
 
     public boolean isInterface(ClassModel classModel) {
@@ -94,7 +120,29 @@ public record ClassUniverse(Map<ClassDesc, ClassModel> universe) {
         return classModel.thisClass().asSymbol().isClassOrInterface();
     }
 
-    private ClassModel resolveClass(ClassEntry classEntry) {
-        return Objects.requireNonNull(universe().get(classEntry.asSymbol()));
+    public ClassModel resolveClass(ClassEntry classEntry) {
+        return resolveClass(classEntry.asSymbol());
+    }
+
+    public ClassModel resolveClass(ClassDesc classDesc) {
+        return Optional.ofNullable(universe.get(classDesc))
+                .orElse(parseJavaSeClass(classDesc));
+    }
+
+    private ClassModel parseJavaSeClass(ClassDesc classDesc) {
+        try {
+            Preconditions.checkArgument(classDesc.isClassOrInterface());
+
+            String packageNameAsPath = classDesc.packageName().replace('.', '/');
+            String simpleClassNameAsFileName = classDesc.displayName() + ".class";
+            String classNameAsPath = packageNameAsPath.isEmpty() ? simpleClassNameAsFileName : packageNameAsPath + "/" + simpleClassNameAsFileName;
+
+            // TODO Module java.se
+            Path classFilePath = jrtFileSystem.getPath("modules", "java.base", classNameAsPath);
+
+            return ClassFile.of().parse(classFilePath);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
