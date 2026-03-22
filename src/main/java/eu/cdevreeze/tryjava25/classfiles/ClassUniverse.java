@@ -125,8 +125,12 @@ public final class ClassUniverse {
     }
 
     public ClassModel resolveClass(ClassDesc classDesc) {
-        return Optional.ofNullable(universe.get(classDesc))
-                .orElse(parseJavaSeClass(classDesc));
+        // Somehow "Optional.ofNullable(universe.get(classDesc))" did not work
+        if (universe.containsKey(classDesc)) {
+            return Objects.requireNonNull(universe.get(classDesc));
+        } else {
+            return parseJavaSeClass(classDesc);
+        }
     }
 
     private ClassModel parseJavaSeClass(ClassDesc classDesc) {

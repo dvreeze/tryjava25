@@ -60,14 +60,20 @@ public class MethodCallsFinder {
     public record InvokeInstructionInMethod(InvokeInstruction invokeInstruction, MethodInClass methodInClass) {
 
         public InvokeInstructionInMethod {
-            // Assuming equality for ClassFileElement is well-defined
-            /*
             Preconditions.checkArgument(
                     methodInClass.methodModel().code().orElseThrow().elementStream()
-                            .anyMatch(codeElem -> codeElem.equals(invokeInstruction))
-
+                            .anyMatch(codeElem ->
+                                    codeElem instanceof InvokeInstruction ivk && equalInstructions(ivk, invokeInstruction)
+                            )
             );
-            */
+        }
+
+        private static boolean equalInstructions(InvokeInstruction ivk1, InvokeInstruction ivk2) {
+            return ivk1.opcode() == ivk2.opcode() &&
+                    ivk1.owner().asSymbol().equals(ivk2.owner().asSymbol()) &&
+                    ivk1.name().equalsString(ivk2.name().stringValue()) &&
+                    ivk1.typeSymbol().equals(ivk2.typeSymbol()) &&
+                    ivk1.isInterface() == ivk2.isInterface();
         }
     }
 
@@ -79,10 +85,19 @@ public class MethodCallsFinder {
         this.rootPackage = Objects.requireNonNull(rootPackage);
     }
 
-    public ImmutableList<InvokeInstructionInMethod> findPotentialMethodCalls(MethodModel methodModel) {
-        ClassModel owningClass = methodModel.parent().orElseThrow();
-        ImmutableList<ClassModel> supertypesOrSelf = classUniverse.findAllSupertypesOrSelf(owningClass);
+    public Optional<MethodModel> findMethodModel(String className, String methodName, Optional<MethodTypeDesc> methodTypeDescOption) {
+        int idx = className.lastIndexOf('.');
+        String packageName = idx < 0 ? "" : className.substring(0, idx);
+        String simpleClassName = idx < 0 ? className : className.substring(idx + 1);
+        ClassDesc classDesc = ClassDesc.of(packageName, simpleClassName);
+        ClassModel classModel = classUniverse.resolveClass(classDesc);
+        return classModel.methods().stream()
+                .filter(methodModel -> methodModel.methodName().equalsString(methodName))
+                .filter(methodModel -> methodTypeDescOption.stream().allMatch(mtd -> methodModel.methodTypeSymbol().equals(mtd)))
+                .findFirst();
+    }
 
+    public ImmutableList<InvokeInstructionInMethod> findMethodCalls(MethodModel methodModel) {
         return classUniverse.getUniverse()
                 .values()
                 .stream()
@@ -91,7 +106,7 @@ public class MethodCallsFinder {
                     return pkg.equals(rootPackage) || pkg.startsWith(rootPackage + ".");
                 })
                 .flatMap(cm -> findOwnInvokeInstructions(cm).stream())
-                .filter(inv -> isMatchingMethodCall(inv.invokeInstruction(), methodModel, supertypesOrSelf))
+                .filter(inv -> isMatchingMethodCall(inv.invokeInstruction(), methodModel))
                 .collect(ImmutableList.toImmutableList());
     }
 
@@ -118,60 +133,56 @@ public class MethodCallsFinder {
                 .collect(ImmutableList.toImmutableList());
     }
 
-    private boolean isMatchingMethodCall(InvokeInstruction invokeInstruction, MethodModel methodModel, List<ClassModel> ownerSupertypesOrSelf) {
+    private boolean isMatchingMethodCall(InvokeInstruction invokeInstruction, MethodModel methodModel) {
         if (!invokeInstruction.name().equalsString(methodModel.methodName().stringValue())) {
             return false;
         }
 
-        // TODO Check against JVM spec, and/or study API better (e.g. InvokeInstruction.of methods)
+        // TODO Check against JVM spec, i.e., https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html
+        // TODO Also look at https://www.guardsquare.com/blog/behind-the-scenes-of-jvm-method-invocations
+
+        // TODO Invoke-dynamic (for lambdas)
 
         ClassModel methodOwner = methodModel.parent().orElseThrow();
 
         return switch (invokeInstruction.opcode()) {
-            case Opcode.INVOKESPECIAL, Opcode.INVOKESTATIC -> !invokeInstruction.isInterface() &&
-                    invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
-                    invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                    invokeInstruction.method().type().equalsString(methodModel.methodType().stringValue());
-            case Opcode.INVOKEINTERFACE -> invokeInstruction.isInterface() &&
-                    ownerSupertypesOrSelf.stream()
-                            .filter(classUniverse::isInterface)
-                            .anyMatch(cls ->
-                                    invokeInstruction.owner().matches(cls.thisClass().asSymbol()) &&
-                                            invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                                            invokeInstruction.method().type().equalsString(methodModel.methodType().stringValue())
-                            );
-            case Opcode.INVOKEVIRTUAL -> !invokeInstruction.isInterface() &&
-                    ownerSupertypesOrSelf.stream()
-                            .filter(cls -> !classUniverse.isInterface(cls))
-                            .anyMatch(cls ->
-                                    invokeInstruction.owner().matches(cls.thisClass().asSymbol()) &&
-                                            invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                                            invokeInstruction.method().type().equalsString(methodModel.methodType().stringValue())
-                            );
+            case Opcode.INVOKESTATIC -> {
+                Preconditions.checkState(methodModel.flags().has(AccessFlag.STATIC));
+                Preconditions.checkState(!methodModel.flags().has(AccessFlag.ABSTRACT));
+                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
+                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
+                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
+            }
+            case Opcode.INVOKEVIRTUAL -> {
+                Preconditions.checkState(!methodModel.flags().has(AccessFlag.STATIC));
+                Preconditions.checkState(methodModel.parent().stream().noneMatch(c -> c.flags().has(AccessFlag.INTERFACE)));
+                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
+                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
+                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
+            }
+            case Opcode.INVOKEINTERFACE -> {
+                Preconditions.checkState(!methodModel.flags().has(AccessFlag.STATIC));
+                Preconditions.checkState(methodModel.parent().stream().anyMatch(c -> c.flags().has(AccessFlag.INTERFACE)));
+                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
+                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
+                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
+            }
+            case Opcode.INVOKESPECIAL -> {
+                Preconditions.checkState(!methodModel.flags().has(AccessFlag.STATIC));
+                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
+                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
+                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
+            }
             default -> false;
         };
-    }
-
-    public Optional<MethodModel> findMethodModel(String className, String methodName) {
-        // TODO Use method type descriptor
-
-        int idx = className.lastIndexOf('.');
-        String packageName = idx < 0 ? "" : className.substring(0, idx);
-        String simpleClassName = idx < 0 ? className : className.substring(idx + 1);
-        ClassDesc classDesc = ClassDesc.of(packageName, simpleClassName);
-        ClassModel classModel = Objects.requireNonNull(classUniverse.getUniverse().get(classDesc));
-        return classModel.elementStream()
-                .flatMap(classElem ->
-                        classElem instanceof MethodModel methodModel ? Stream.of(methodModel) : Stream.empty()
-                )
-                .filter(methodModel -> methodModel.methodName().equalsString(methodName))
-                .findFirst();
     }
 
     static void main(String... args) {
         Objects.checkIndex(1, args.length);
         String className = args[0];
         String methodName = args[1];
+        Optional<MethodTypeDesc> methodTypeDescOption =
+                args.length == 3 ? Optional.of(MethodTypeDesc.ofDescriptor(args[2])) : Optional.empty();
 
         String inspectionClasspath = System.getProperty("inspectionClasspath");
         Objects.requireNonNull(inspectionClasspath);
@@ -184,10 +195,14 @@ public class MethodCallsFinder {
 
         MethodCallsFinder methodCallsFinder = new MethodCallsFinder(classUniverse, inspectionRootPackage);
 
-        MethodModel methodModel = methodCallsFinder.findMethodModel(className, methodName).orElseThrow();
+        MethodModel methodModel = methodCallsFinder.findMethodModel(className, methodName, methodTypeDescOption).orElseThrow();
 
-        ImmutableList<InvokeInstructionInMethod> invokeInstructions = methodCallsFinder.findPotentialMethodCalls(methodModel);
+        ImmutableList<InvokeInstructionInMethod> invokeInstructions = methodCallsFinder.findMethodCalls(methodModel);
 
-        invokeInstructions.forEach(System.out::println);
+        System.out.println();
+        System.out.println("Note that for calling classes subclasses can also be callers (especially for invoke-virtual and invoke-interface)");
+        System.out.println();
+
+        invokeInstructions.forEach(ivk -> System.out.printf("Invoke instruction: %s%n", ivk));
     }
 }
