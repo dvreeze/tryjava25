@@ -41,7 +41,34 @@ import eu.cdevreeze.tryjava25.classfiles.ClassUniverse;
  */
 public class MethodCallsFinder {
 
-    public record MethodCall(ClassModel invokeInstructionOwner, InvokeInstruction invokeInstruction) {
+    public record MethodInClass(MethodModel methodModel, ClassDesc classDesc) {
+
+        public MethodInClass {
+            Preconditions.checkArgument(methodModel.parent().isPresent());
+            Preconditions.checkArgument(methodModel.parent().orElseThrow().thisClass().asSymbol().equals(classDesc));
+        }
+
+        public ClassModel parent() {
+            return methodModel().parent().orElseThrow();
+        }
+
+        public static MethodInClass of(MethodModel methodModel) {
+            return new MethodInClass(methodModel, methodModel.parent().orElseThrow().thisClass().asSymbol());
+        }
+    }
+
+    public record InvokeInstructionInMethod(InvokeInstruction invokeInstruction, MethodInClass methodInClass) {
+
+        public InvokeInstructionInMethod {
+            // Assuming equality for ClassFileElement is well-defined
+            /*
+            Preconditions.checkArgument(
+                    methodInClass.methodModel().code().orElseThrow().elementStream()
+                            .anyMatch(codeElem -> codeElem.equals(invokeInstruction))
+
+            );
+            */
+        }
     }
 
     private final ClassUniverse classUniverse;
@@ -52,7 +79,7 @@ public class MethodCallsFinder {
         this.rootPackage = Objects.requireNonNull(rootPackage);
     }
 
-    public ImmutableList<MethodCall> findPotentialMethodCalls(MethodModel methodModel) {
+    public ImmutableList<InvokeInstructionInMethod> findPotentialMethodCalls(MethodModel methodModel) {
         ClassModel owningClass = methodModel.parent().orElseThrow();
         ImmutableList<ClassModel> supertypesOrSelf = classUniverse.findAllSupertypesOrSelf(owningClass);
 
@@ -64,30 +91,29 @@ public class MethodCallsFinder {
                     return pkg.equals(rootPackage) || pkg.startsWith(rootPackage + ".");
                 })
                 .flatMap(cm -> findOwnInvokeInstructions(cm).stream())
-                .filter(inv -> isMatchingMethodCall(inv, methodModel, supertypesOrSelf))
-                // broken, inv.owner returns the method owner, not the method call owner
-                .map(inv -> new MethodCall(Objects.requireNonNull(classUniverse.getUniverse().get(inv.owner().asSymbol())), inv))
+                .filter(inv -> isMatchingMethodCall(inv.invokeInstruction(), methodModel, supertypesOrSelf))
                 .collect(ImmutableList.toImmutableList());
     }
 
-    private ImmutableList<InvokeInstruction> findOwnInvokeInstructions(ClassModel classModel) {
+    private ImmutableList<InvokeInstructionInMethod> findOwnInvokeInstructions(ClassModel classModel) {
         Preconditions.checkArgument(classUniverse.isClassOrInterface(classModel)); // no-op for interfaces
 
-        return classModel.elementStream()
-                .flatMap(classElem ->
-                        classElem instanceof MethodModel methodModel ?
-                                methodModel.elementStream() :
-                                Stream.empty()
-                )
-                .flatMap(methodElem ->
-                        methodElem instanceof CodeModel codeModel ?
-                                codeModel.elementStream() :
-                                Stream.empty()
-                )
-                .flatMap(codeElem ->
-                        codeElem instanceof InvokeInstruction invokeInstruction ?
-                                Stream.of(invokeInstruction) :
-                                Stream.empty()
+        if (classUniverse.isInterface(classModel)) {
+            return ImmutableList.of();
+        }
+
+        Preconditions.checkState(classUniverse.isRegularClass(classModel));
+
+        List<MethodInClass> methods = classModel.methods().stream().map(MethodInClass::of).toList();
+
+        return methods.stream()
+                .filter(m -> m.methodModel().code().isPresent())
+                .flatMap(m ->
+                        m.methodModel().code().orElseThrow().elementStream().flatMap(codeElem ->
+                                codeElem instanceof InvokeInstruction invokeInstruction ?
+                                        Stream.of(new InvokeInstructionInMethod(invokeInstruction, m)) :
+                                        Stream.empty()
+                        )
                 )
                 .collect(ImmutableList.toImmutableList());
     }
@@ -160,8 +186,8 @@ public class MethodCallsFinder {
 
         MethodModel methodModel = methodCallsFinder.findMethodModel(className, methodName).orElseThrow();
 
-        ImmutableList<MethodCall> methodCallInstructions = methodCallsFinder.findPotentialMethodCalls(methodModel);
+        ImmutableList<InvokeInstructionInMethod> invokeInstructions = methodCallsFinder.findPotentialMethodCalls(methodModel);
 
-        methodCallInstructions.forEach(System.out::println);
+        invokeInstructions.forEach(System.out::println);
     }
 }
