@@ -173,8 +173,6 @@ public class MethodCallsFinder {
         ImmutableList<InvokeInstructionInMethod> invokeInstructions = methodCallsFinder.findMethodCalls(methodModel);
 
         System.out.println();
-        System.out.println("Note that for calling classes subclasses can also be callers (especially for invoke-virtual and invoke-interface)");
-        System.out.println();
 
         invokeInstructions.forEach(ivk -> System.out.printf("Invoke instruction: %s%n", ivk));
     }
