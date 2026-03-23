@@ -115,8 +115,11 @@ public record ClassModelParser(ClassFile classFile) {
             if (Files.isDirectory(cpEntry)) {
                 builder.putAll(parseExplodedDirectory(cpEntry));
             } else {
-                Preconditions.checkState(Files.isRegularFile(cpEntry) && cpEntry.getFileName().toString().endsWith(".jar"));
-                builder.putAll(parseJarFile(cpEntry));
+                Preconditions.checkState(Files.isRegularFile(cpEntry));
+
+                if (cpEntry.getFileName().toString().endsWith(".jar")) {
+                    builder.putAll(parseJarFile(cpEntry));
+                }
             }
         }
         return builder.buildKeepingLast();

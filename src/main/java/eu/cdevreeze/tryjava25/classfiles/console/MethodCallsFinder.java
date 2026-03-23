@@ -145,36 +145,9 @@ public class MethodCallsFinder {
 
         ClassModel methodOwner = methodModel.parent().orElseThrow();
 
-        return switch (invokeInstruction.opcode()) {
-            case Opcode.INVOKESTATIC -> {
-                Preconditions.checkState(methodModel.flags().has(AccessFlag.STATIC));
-                Preconditions.checkState(!methodModel.flags().has(AccessFlag.ABSTRACT));
-                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
-                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
-            }
-            case Opcode.INVOKEVIRTUAL -> {
-                Preconditions.checkState(!methodModel.flags().has(AccessFlag.STATIC));
-                Preconditions.checkState(methodModel.parent().stream().noneMatch(c -> c.flags().has(AccessFlag.INTERFACE)));
-                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
-                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
-            }
-            case Opcode.INVOKEINTERFACE -> {
-                Preconditions.checkState(!methodModel.flags().has(AccessFlag.STATIC));
-                Preconditions.checkState(methodModel.parent().stream().anyMatch(c -> c.flags().has(AccessFlag.INTERFACE)));
-                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
-                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
-            }
-            case Opcode.INVOKESPECIAL -> {
-                Preconditions.checkState(!methodModel.flags().has(AccessFlag.STATIC));
-                yield invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
-                        invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
-                        invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
-            }
-            default -> false;
-        };
+        return invokeInstruction.owner().matches(methodOwner.thisClass().asSymbol()) &&
+                invokeInstruction.method().name().equalsString(methodModel.methodName().stringValue()) &&
+                invokeInstruction.typeSymbol().equals(methodModel.methodTypeSymbol());
     }
 
     static void main(String... args) {
