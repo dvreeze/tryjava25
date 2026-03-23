@@ -60,7 +60,7 @@ public record ClassModelParser(ClassFile classFile) {
     }
 
     public ImmutableMap<ClassDesc, ClassModel> parseExplodedDirectory(Path directory) {
-        Preconditions.checkArgument(Files.exists(directory));
+        Preconditions.checkArgument(Files.isDirectory(directory));
 
         try (Stream<Path> fileStream = Files.walk(directory)) {
             return fileStream
@@ -104,6 +104,14 @@ public record ClassModelParser(ClassFile classFile) {
         return parseJdkModuleClass("java.se", className);
     }
 
+    public ImmutableMap<ClassDesc, ClassModel> parseExplodedWarDirectory(Path directory) {
+        Preconditions.checkArgument(Files.isDirectory(directory));
+        Preconditions.checkArgument(Files.isDirectory(directory.resolve("WEB-INF")));
+
+        String classPath = createClassPathStringFromExplodedWarDirectory(directory);
+        return parseClassPath(classPath);
+    }
+
     public ImmutableMap<ClassDesc, ClassModel> parseClassPath(String classPath) {
         // Expecting a Unix-style classpath string, using colons as separator instead of semicolons
 
@@ -138,6 +146,26 @@ public record ClassModelParser(ClassFile classFile) {
             return ImmutableMap.of();
         } else {
             return parseClassPath(String.join(":", classPaths));
+        }
+    }
+
+    public static String createClassPathStringFromExplodedWarDirectory(Path directory) {
+        Preconditions.checkArgument(Files.isDirectory(directory));
+        Preconditions.checkArgument(Files.isDirectory(directory.resolve("WEB-INF")));
+
+        try (Stream<Path> fileStream = Files.walk(directory)) {
+            return fileStream
+                    .filter(f -> {
+                        if (Files.isRegularFile(f) && directory.relativize(f).startsWith(Path.of("WEB-INF", "lib"))) {
+                            return f.getFileName().toString().endsWith(".jar");
+                        } else {
+                            return Files.isDirectory(f) && directory.relativize(f).equals(Path.of("WEB-INF", "classes"));
+                        }
+                    })
+                    .map(Path::toString)
+                    .collect(Collectors.joining(":"));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
