@@ -73,7 +73,6 @@ public class RecursiveMethodCallsFinder {
         if (maxRecursionDepth <= 0) {
             return ImmutableList.of();
         }
-        // Extremely inefficient implementation
 
         ImmutableList<InvokeInstructionAndContainingMethod> directCallers = findMethodCalls(methodModel);
 
