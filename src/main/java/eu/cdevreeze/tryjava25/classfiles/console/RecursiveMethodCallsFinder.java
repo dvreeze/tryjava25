@@ -103,7 +103,7 @@ public class RecursiveMethodCallsFinder {
         ClassUniverse rawClassUniverse = new ClassUniverse(classModelParser.parseClassPath(inspectionClasspath));
 
         // Expensive call
-        EnhancedClassUniverse classUniverse = EnhancedClassUniverse.create(rawClassUniverse);
+        EnhancedClassUniverse classUniverse = EnhancedClassUniverse.create(rawClassUniverse, inspectionRootPackage);
 
         RecursiveMethodCallsFinder methodCallsFinder = new RecursiveMethodCallsFinder(classUniverse, inspectionRootPackage);
 

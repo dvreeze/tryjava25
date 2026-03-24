@@ -138,7 +138,7 @@ public class MethodCallsFinder {
         ClassUniverse rawClassUniverse = new ClassUniverse(classModelParser.parseClassPath(inspectionClasspath));
 
         // Expensive call
-        EnhancedClassUniverse classUniverse = EnhancedClassUniverse.create(rawClassUniverse);
+        EnhancedClassUniverse classUniverse = EnhancedClassUniverse.create(rawClassUniverse, inspectionRootPackage);
 
         MethodCallsFinder methodCallsFinder = new MethodCallsFinder(classUniverse, inspectionRootPackage);
 

@@ -26,11 +26,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
  * Like a {@link ClassUniverse}, but enhanced with data about classes containing methods calling into
- * the classes making up the {@link ClassUniverse}.
+ * the classes making up the {@link ClassUniverse}. The latter may be incomplete in that not necessarily
+ * all classes in the underlying {@link ClassUniverse} occur in the "class usage map".
  *
  * @author Chris de Vreeze
  */
@@ -39,10 +41,22 @@ public record EnhancedClassUniverse(
         ImmutableMap<ClassDesc, ImmutableList<ClassDesc>> classUsageMap
 ) {
 
-    public static EnhancedClassUniverse create(ClassUniverse classUniverse) {
+    public static EnhancedClassUniverse create(ClassUniverse classUniverse, String packageNameStartString) {
+        return create(classUniverse, List.of(packageNameStartString));
+    }
+
+    public static EnhancedClassUniverse create(ClassUniverse classUniverse, List<String> packageNameStartStrings) {
+        return create(classUniverse, c -> packageNameStartStrings.stream().anyMatch(s -> c.packageName().startsWith(s)));
+    }
+
+    public static EnhancedClassUniverse create(ClassUniverse classUniverse, Predicate<ClassDesc> mustBeInClassUsageMap) {
         Map<ClassDesc, List<ClassDesc>> classUsageMapBuilder = new HashMap<>();
 
-        for (ClassModel classModel : classUniverse.getUniverse().values()) {
+        List<ClassModel> classesThatMustBeInClassUsageMap = classUniverse.getUniverse().values().stream()
+                .filter(c -> mustBeInClassUsageMap.test(c.thisClass().asSymbol()))
+                .toList();
+
+        for (ClassModel classModel : classesThatMustBeInClassUsageMap) {
             classModel.methods().stream()
                     .filter(m -> m.code().isPresent())
                     .map(MethodAndContainingClass::of)
