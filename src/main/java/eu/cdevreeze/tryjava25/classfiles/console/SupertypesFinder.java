@@ -20,6 +20,12 @@ import module java.base;
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.tryjava25.classfiles.ClassModelParser;
 import eu.cdevreeze.tryjava25.classfiles.ClassUniverse;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinters;
+
+import javax.xml.namespace.QName;
 
 /**
  * Program that finds all supertypes (or self) of an interface or class.
@@ -69,6 +75,16 @@ public class SupertypesFinder {
 
         ImmutableList<ClassModel> supertypesOrSelf = supertypesFinder.findAllSupertypesOrSelf(className);
 
-        supertypesOrSelf.forEach(tpe -> System.out.printf("Supertype or self: %s%n", tpe));
+        Element rootElem = Nodes.elem(new QName("superTypesOrSelf"))
+                .plusAttribute(new QName("type"), className)
+                .plusChildren(
+                        supertypesOrSelf.stream()
+                                .map(tpe -> Nodes.elem("type").plusText(tpe.thisClass().asSymbol().descriptorString()))
+                                .collect(ImmutableList.toImmutableList())
+                );
+
+        DocumentPrinter docPrinter = DocumentPrinters.instance();
+        String xml = docPrinter.print(rootElem);
+        System.out.println(xml);
     }
 }
