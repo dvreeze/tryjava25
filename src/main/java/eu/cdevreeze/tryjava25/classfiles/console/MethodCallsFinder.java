@@ -19,8 +19,7 @@ package eu.cdevreeze.tryjava25.classfiles.console;
 import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import eu.cdevreeze.tryjava25.classfiles.ClassModelParser;
-import eu.cdevreeze.tryjava25.classfiles.ClassUniverse;
+import eu.cdevreeze.tryjava25.classfiles.*;
 
 /**
  * Program that finds callers (and potential callers) of a given method.
@@ -41,46 +40,10 @@ import eu.cdevreeze.tryjava25.classfiles.ClassUniverse;
  */
 public class MethodCallsFinder {
 
-    public record MethodInClass(MethodModel methodModel, ClassDesc classDesc) {
-
-        public MethodInClass {
-            Preconditions.checkArgument(methodModel.parent().isPresent());
-            Preconditions.checkArgument(methodModel.parent().orElseThrow().thisClass().asSymbol().equals(classDesc));
-        }
-
-        public ClassModel parent() {
-            return methodModel().parent().orElseThrow();
-        }
-
-        public static MethodInClass of(MethodModel methodModel) {
-            return new MethodInClass(methodModel, methodModel.parent().orElseThrow().thisClass().asSymbol());
-        }
-    }
-
-    public record InvokeInstructionInMethod(InvokeInstruction invokeInstruction, MethodInClass methodInClass) {
-
-        public InvokeInstructionInMethod {
-            Preconditions.checkArgument(
-                    methodInClass.methodModel().code().orElseThrow().elementStream()
-                            .anyMatch(codeElem ->
-                                    codeElem instanceof InvokeInstruction ivk && equalInstructions(ivk, invokeInstruction)
-                            )
-            );
-        }
-
-        private static boolean equalInstructions(InvokeInstruction ivk1, InvokeInstruction ivk2) {
-            return ivk1.opcode() == ivk2.opcode() &&
-                    ivk1.owner().asSymbol().equals(ivk2.owner().asSymbol()) &&
-                    ivk1.name().equalsString(ivk2.name().stringValue()) &&
-                    ivk1.typeSymbol().equals(ivk2.typeSymbol()) &&
-                    ivk1.isInterface() == ivk2.isInterface();
-        }
-    }
-
-    private final ClassUniverse classUniverse;
+    private final EnhancedClassUniverse classUniverse;
     private final String rootPackage;
 
-    public MethodCallsFinder(ClassUniverse classUniverse, String rootPackage) {
+    public MethodCallsFinder(EnhancedClassUniverse classUniverse, String rootPackage) {
         this.classUniverse = Objects.requireNonNull(classUniverse);
         this.rootPackage = Objects.requireNonNull(rootPackage);
     }
@@ -90,43 +53,50 @@ public class MethodCallsFinder {
         String packageName = idx < 0 ? "" : className.substring(0, idx);
         String simpleClassName = idx < 0 ? className : className.substring(idx + 1);
         ClassDesc classDesc = ClassDesc.of(packageName, simpleClassName);
-        ClassModel classModel = classUniverse.resolveClass(classDesc);
+        ClassModel classModel = classUniverse.classUniverse().resolveClass(classDesc);
         return classModel.methods().stream()
                 .filter(methodModel -> methodModel.methodName().equalsString(methodName))
                 .filter(methodModel -> methodTypeDescOption.stream().allMatch(mtd -> methodModel.methodTypeSymbol().equals(mtd)))
                 .findFirst();
     }
 
-    public ImmutableList<InvokeInstructionInMethod> findMethodCalls(MethodModel methodModel) {
-        return classUniverse.getUniverse()
-                .values()
+    public ImmutableList<InvokeInstructionAndContainingMethod> findMethodCalls(MethodModel methodModel) {
+        ClassDesc classContainingMethod = methodModel.parent().orElseThrow().thisClass().asSymbol();
+        List<ClassDesc> classesContainingCallsToTheMethod = classUniverse.classUsageMap().containsKey(classContainingMethod) ?
+                classUniverse.classUsageMap().get(classContainingMethod) :
+                ImmutableList.of();
+        Objects.requireNonNull(classesContainingCallsToTheMethod);
+
+        return classesContainingCallsToTheMethod
                 .stream()
+                .map(c -> classUniverse.classUniverse().resolveClass(c))
                 .filter(cm -> {
                     String pkg = cm.thisClass().asSymbol().packageName();
                     return pkg.equals(rootPackage) || pkg.startsWith(rootPackage + ".");
                 })
                 .flatMap(cm -> findOwnInvokeInstructions(cm).stream())
                 .filter(inv -> isMatchingMethodCall(inv.invokeInstruction(), methodModel))
+                .distinct()
                 .collect(ImmutableList.toImmutableList());
     }
 
-    private ImmutableList<InvokeInstructionInMethod> findOwnInvokeInstructions(ClassModel classModel) {
-        Preconditions.checkArgument(classUniverse.isClassOrInterface(classModel)); // no-op for interfaces
+    private ImmutableList<InvokeInstructionAndContainingMethod> findOwnInvokeInstructions(ClassModel classModel) {
+        Preconditions.checkArgument(classUniverse.classUniverse().isClassOrInterface(classModel)); // no-op for interfaces
 
-        if (classUniverse.isInterface(classModel)) {
+        if (classUniverse.classUniverse().isInterface(classModel)) {
             return ImmutableList.of();
         }
 
-        Preconditions.checkState(classUniverse.isRegularClass(classModel));
+        Preconditions.checkState(classUniverse.classUniverse().isRegularClass(classModel));
 
-        List<MethodInClass> methods = classModel.methods().stream().map(MethodInClass::of).toList();
+        List<MethodAndContainingClass> methods = classModel.methods().stream().map(MethodAndContainingClass::of).toList();
 
         return methods.stream()
                 .filter(m -> m.methodModel().code().isPresent())
                 .flatMap(m ->
                         m.methodModel().code().orElseThrow().elementStream().flatMap(codeElem ->
                                 codeElem instanceof InvokeInstruction invokeInstruction ?
-                                        Stream.of(new InvokeInstructionInMethod(invokeInstruction, m)) :
+                                        Stream.of(new InvokeInstructionAndContainingMethod(invokeInstruction, m)) :
                                         Stream.empty()
                         )
                 )
@@ -164,13 +134,17 @@ public class MethodCallsFinder {
         Objects.requireNonNull(inspectionRootPackage);
 
         ClassModelParser classModelParser = new ClassModelParser(ClassFile.of());
-        ClassUniverse classUniverse = new ClassUniverse(classModelParser.parseClassPath(inspectionClasspath));
+        // Expensive call
+        ClassUniverse rawClassUniverse = new ClassUniverse(classModelParser.parseClassPath(inspectionClasspath));
+
+        // Expensive call
+        EnhancedClassUniverse classUniverse = EnhancedClassUniverse.create(rawClassUniverse);
 
         MethodCallsFinder methodCallsFinder = new MethodCallsFinder(classUniverse, inspectionRootPackage);
 
         MethodModel methodModel = methodCallsFinder.findMethodModel(className, methodName, methodTypeDescOption).orElseThrow();
 
-        ImmutableList<InvokeInstructionInMethod> invokeInstructions = methodCallsFinder.findMethodCalls(methodModel);
+        ImmutableList<InvokeInstructionAndContainingMethod> invokeInstructions = methodCallsFinder.findMethodCalls(methodModel);
 
         System.out.println();
 
