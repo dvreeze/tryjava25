@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.instruction.InvokeInstruction;
 import java.lang.constant.ClassDesc;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,11 +54,12 @@ public record EnhancedClassUniverse(
                             )
                     )
                     .forEach(ivk -> {
-                        classUsageMapBuilder.merge(
-                                ivk.invokeInstruction().owner().asSymbol(),
-                                List.of(ivk.methodAndContainingClass().classDesc()),
-                                (v1, v2) -> Stream.concat(v1.stream(), v2.stream()).toList()
-                        );
+                        ClassDesc classOwningMethod = ivk.invokeInstruction().owner().asSymbol();
+
+                        if (!classUsageMapBuilder.containsKey(classOwningMethod)) {
+                            classUsageMapBuilder.put(classOwningMethod, new ArrayList<>());
+                        }
+                        classUsageMapBuilder.get(classOwningMethod).add(ivk.methodAndContainingClass().classDesc());
                     });
         }
 
