@@ -17,7 +17,10 @@
 package eu.cdevreeze.tryjava25.classfiles;
 
 import com.google.common.base.Preconditions;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
 
+import javax.xml.namespace.QName;
 import java.lang.classfile.instruction.InvokeInstruction;
 
 /**
@@ -43,5 +46,22 @@ public record InvokeInstructionAndContainingMethod(InvokeInstruction invokeInstr
                 ivk1.name().equalsString(ivk2.name().stringValue()) &&
                 ivk1.typeSymbol().equals(ivk2.typeSymbol()) &&
                 ivk1.isInterface() == ivk2.isInterface();
+    }
+
+    public Element toXml() {
+        return toXml(new QName("invokeInstructionAndContainingMethod"));
+    }
+
+    public Element toXml(QName rootElementName) {
+        return Nodes.elem(rootElementName)
+                .plusChild(
+                        Nodes.elem(new QName("invokeInstruction"))
+                                .plusChild(Nodes.elem(new QName("opcode")).plusText(invokeInstruction().opcode().name()))
+                                .plusChild(Nodes.elem(new QName("owner")).plusText(invokeInstruction().owner().asInternalName()))
+                                .plusChild(Nodes.elem(new QName("name")).plusText(invokeInstruction().name().stringValue()))
+                                .plusChild(Nodes.elem(new QName("typeSymbol")).plusText(invokeInstruction().typeSymbol().descriptorString()))
+                                .plusChild(Nodes.elem(new QName("isInterface")).plusText(String.valueOf(invokeInstruction().isInterface())))
+                )
+                .plusChild(methodAndContainingClass.toXml(new QName("methodContainingInstruction")));
     }
 }

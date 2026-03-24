@@ -17,7 +17,10 @@
 package eu.cdevreeze.tryjava25.classfiles;
 
 import com.google.common.base.Preconditions;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
 
+import javax.xml.namespace.QName;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.MethodModel;
 import java.lang.constant.ClassDesc;
@@ -40,5 +43,16 @@ public record MethodAndContainingClass(MethodModel methodModel, ClassDesc classD
 
     public static MethodAndContainingClass of(MethodModel methodModel) {
         return new MethodAndContainingClass(methodModel, methodModel.parent().orElseThrow().thisClass().asSymbol());
+    }
+
+    public Element toXml() {
+        return toXml(new QName("method"));
+    }
+
+    public Element toXml(QName rootElementName) {
+        return Nodes.elem(rootElementName)
+                .plusChild(Nodes.elem(new QName("methodName")).plusText(methodModel().methodName().stringValue()))
+                .plusChild(Nodes.elem(new QName("methodTypeSymbol")).plusText(methodModel().methodTypeSymbol().descriptorString()))
+                .plusChild(Nodes.elem(new QName("parent")).plusText(classDesc.descriptorString()));
     }
 }

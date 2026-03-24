@@ -20,6 +20,12 @@ import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.tryjava25.classfiles.*;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
+import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinters;
+
+import javax.xml.namespace.QName;
 
 /**
  * Program that finds callers (and potential callers) of a given method.
@@ -146,8 +152,11 @@ public class MethodCallsFinder {
 
         ImmutableList<InvokeInstructionAndContainingMethod> invokeInstructions = methodCallsFinder.findMethodCalls(methodModel);
 
-        System.out.println();
+        Element invokeInstructionsRootElem = Nodes.elem(new QName("invokeInstructions"))
+                .plusChildren(invokeInstructions.stream().map(InvokeInstructionAndContainingMethod::toXml).collect(ImmutableList.toImmutableList()));
 
-        invokeInstructions.forEach(ivk -> System.out.printf("Invoke instruction: %s%n", ivk));
+        DocumentPrinter docPrinter = DocumentPrinters.instance();
+        String xml = docPrinter.print(invokeInstructionsRootElem);
+        System.out.println(xml);
     }
 }
