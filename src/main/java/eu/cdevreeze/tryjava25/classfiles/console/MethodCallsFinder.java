@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.tryjava25.classfiles.data.InvokeInstructionAndContainingMethod;
 import eu.cdevreeze.tryjava25.classfiles.data.MethodAndContainingClass;
+import eu.cdevreeze.tryjava25.classfiles.internal.MyGatherers;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassUniverse;
 import eu.cdevreeze.tryjava25.classfiles.parse.EnhancedClassUniverse;
@@ -86,7 +87,7 @@ public class MethodCallsFinder {
                 })
                 .flatMap(cm -> findOwnInvokeInstructions(cm).stream())
                 .filter(inv -> isMatchingMethodCall(inv.getInvokeInstruction(), methodModel))
-                .distinct()
+                .gather(MyGatherers.distinctBy(InvokeInstructionAndContainingMethod::toDescriptorModel))
                 .collect(ImmutableList.toImmutableList());
     }
 

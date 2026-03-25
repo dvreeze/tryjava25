@@ -18,6 +18,7 @@ package eu.cdevreeze.tryjava25.classfiles.console;
 
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.tryjava25.classfiles.data.InvokeInstructionAndContainingMethod;
+import eu.cdevreeze.tryjava25.classfiles.internal.MyGatherers;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassUniverse;
 import eu.cdevreeze.tryjava25.classfiles.parse.EnhancedClassUniverse;
@@ -85,7 +86,7 @@ public class RecursiveMethodCallsFinder {
                             findMethodCallsRecursively(methodContainingCaller, maxRecursionDepth - 1).stream()
                     );
                 })
-                .distinct()
+                .gather(MyGatherers.distinctBy(InvokeInstructionAndContainingMethod::toDescriptorModel))
                 .collect(ImmutableList.toImmutableList());
     }
 

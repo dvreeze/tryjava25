@@ -20,6 +20,7 @@ import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import eu.cdevreeze.tryjava25.classfiles.internal.MyGatherers;
 
 /**
  * Utility methods to get all ancestor classes of a class, all implemented interfaces, etc.
@@ -74,7 +75,7 @@ public final class ClassUniverse {
                                 findAllInterfaces(classModel).stream()
                         )
                 )
-                .distinct()
+                .gather(MyGatherers.distinctBy(cm -> cm.thisClass().asSymbol()))
                 .collect(ImmutableList.toImmutableList());
     }
 
@@ -91,9 +92,9 @@ public final class ClassUniverse {
         return findAllSuperclassesOrSelf(classModel)
                 .stream()
                 .flatMap(c -> c.interfaces().stream().map(this::resolveClass))
-                .distinct()
+                .gather(MyGatherers.distinctBy(cm -> cm.thisClass().asSymbol()))
                 .flatMap(itf -> findAllExtendedInterfacesOrSelf(itf).stream())
-                .distinct()
+                .gather(MyGatherers.distinctBy(cm -> cm.thisClass().asSymbol()))
                 .collect(ImmutableList.toImmutableList());
     }
 
