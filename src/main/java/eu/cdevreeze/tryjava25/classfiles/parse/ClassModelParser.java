@@ -27,7 +27,7 @@ import com.google.common.io.ByteStreams;
  * The typical way to parse class files into {@link ClassModel} objects when introspecting a Maven project
  * is to first do a clean build of that project with "mvn clean install", followed by "mvn dependency:build-classpath".
  * The latter classpath string should then be used as input to this {@link ClassModelParser}. Note that a full
- * "class desc universe" includes that classpath, but also the project compilation output and module "java.se".
+ * "class model universe" includes that classpath, but also the project compilation output and module "java.se".
  * The latter are only "loaded" on demand, so mostly out of scope for this class.
  *
  * @author Chris de Vreeze

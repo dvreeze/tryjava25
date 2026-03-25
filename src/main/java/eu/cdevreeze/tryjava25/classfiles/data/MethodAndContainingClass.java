@@ -36,14 +36,11 @@ import java.lang.constant.ClassDesc;
 public final class MethodAndContainingClass {
 
     private final MethodModel methodModel;
-    private final ClassDesc classDesc;
 
-    public MethodAndContainingClass(MethodModel methodModel, ClassDesc classDesc) {
+    public MethodAndContainingClass(MethodModel methodModel) {
         Preconditions.checkArgument(methodModel.parent().isPresent());
-        Preconditions.checkArgument(methodModel.parent().orElseThrow().thisClass().asSymbol().equals(classDesc));
 
         this.methodModel = methodModel;
-        this.classDesc = classDesc;
     }
 
     public MethodModel getMethodModel() {
@@ -51,7 +48,7 @@ public final class MethodAndContainingClass {
     }
 
     public ClassDesc getClassDesc() {
-        return classDesc;
+        return methodModel.parent().orElseThrow().thisClass().asSymbol();
     }
 
     public ClassModel getParent() {
@@ -62,13 +59,13 @@ public final class MethodAndContainingClass {
         return new DescriptorModel.Method(
                 methodModel.methodName().stringValue(),
                 methodModel.methodTypeSymbol(),
-                classDesc,
+                getClassDesc(),
                 methodModel.flags().flags().stream().collect(ImmutableSet.toImmutableSet())
         );
     }
 
     public static MethodAndContainingClass of(MethodModel methodModel) {
-        return new MethodAndContainingClass(methodModel, methodModel.parent().orElseThrow().thisClass().asSymbol());
+        return new MethodAndContainingClass(methodModel);
     }
 
     public Element toXml() {

@@ -63,7 +63,7 @@ public class MethodCallsFinder {
         String packageName = idx < 0 ? "" : className.substring(0, idx);
         String simpleClassName = idx < 0 ? className : className.substring(idx + 1);
         ClassDesc classDesc = ClassDesc.of(packageName, simpleClassName);
-        ClassModel classModel = classUniverse.classUniverse().resolveClass(classDesc);
+        ClassModel classModel = classUniverse.getClassUniverse().resolveClass(classDesc);
         return classModel.methods().stream()
                 .filter(methodModel -> methodModel.methodName().equalsString(methodName))
                 .filter(methodModel -> methodTypeDescOption.stream().allMatch(mtd -> methodModel.methodTypeSymbol().equals(mtd)))
@@ -72,14 +72,14 @@ public class MethodCallsFinder {
 
     public ImmutableList<InvokeInstructionAndContainingMethod> findMethodCalls(MethodModel methodModel) {
         ClassDesc classContainingMethod = methodModel.parent().orElseThrow().thisClass().asSymbol();
-        List<ClassDesc> classesContainingCallsToTheMethod = classUniverse.classUsageMap().containsKey(classContainingMethod) ?
-                classUniverse.classUsageMap().get(classContainingMethod) :
+        List<ClassDesc> classesContainingCallsToTheMethod = classUniverse.getClassUsageMap().containsKey(classContainingMethod) ?
+                classUniverse.getClassUsageMap().get(classContainingMethod) :
                 ImmutableList.of();
         Objects.requireNonNull(classesContainingCallsToTheMethod);
 
         return classesContainingCallsToTheMethod
                 .stream()
-                .map(c -> classUniverse.classUniverse().resolveClass(c))
+                .map(c -> classUniverse.getClassUniverse().resolveClass(c))
                 .filter(cm -> {
                     String pkg = cm.thisClass().asSymbol().packageName();
                     return pkg.equals(rootPackage) || pkg.startsWith(rootPackage + ".");
@@ -91,13 +91,13 @@ public class MethodCallsFinder {
     }
 
     private ImmutableList<InvokeInstructionAndContainingMethod> findOwnInvokeInstructions(ClassModel classModel) {
-        Preconditions.checkArgument(classUniverse.classUniverse().isClassOrInterface(classModel)); // no-op for interfaces
+        Preconditions.checkArgument(classUniverse.getClassUniverse().isClassOrInterface(classModel)); // no-op for interfaces
 
-        if (classUniverse.classUniverse().isInterface(classModel)) {
+        if (classUniverse.getClassUniverse().isInterface(classModel)) {
             return ImmutableList.of();
         }
 
-        Preconditions.checkState(classUniverse.classUniverse().isRegularClass(classModel));
+        Preconditions.checkState(classUniverse.getClassUniverse().isRegularClass(classModel));
 
         List<MethodAndContainingClass> methods = classModel.methods().stream().map(MethodAndContainingClass::of).toList();
 

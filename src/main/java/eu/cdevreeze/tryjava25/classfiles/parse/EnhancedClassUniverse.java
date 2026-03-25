@@ -35,13 +35,29 @@ import java.util.stream.Stream;
  * Like a {@link ClassUniverse}, but enhanced with data about classes containing methods calling into
  * the classes making up the {@link ClassUniverse}. The latter may be incomplete in that not necessarily
  * all classes in the underlying {@link ClassUniverse} occur in the "class usage map".
+ * <p>
+ * This is not a Java {@link Record} with value equality, due to lazily loaded {@link ClassModel} data in
+ * the "class universe".
  *
  * @author Chris de Vreeze
  */
-public record EnhancedClassUniverse(
-        ClassUniverse classUniverse,
-        ImmutableMap<ClassDesc, ImmutableList<ClassDesc>> classUsageMap
-) {
+public final class EnhancedClassUniverse {
+
+    private final ClassUniverse classUniverse;
+    private final ImmutableMap<ClassDesc, ImmutableList<ClassDesc>> classUsageMap;
+
+    public EnhancedClassUniverse(ClassUniverse classUniverse, ImmutableMap<ClassDesc, ImmutableList<ClassDesc>> classUsageMap) {
+        this.classUniverse = classUniverse;
+        this.classUsageMap = classUsageMap;
+    }
+
+    public ClassUniverse getClassUniverse() {
+        return classUniverse;
+    }
+
+    public ImmutableMap<ClassDesc, ImmutableList<ClassDesc>> getClassUsageMap() {
+        return classUsageMap;
+    }
 
     public static EnhancedClassUniverse create(ClassUniverse classUniverse, String packageNameStartString) {
         return create(classUniverse, List.of(packageNameStartString));
