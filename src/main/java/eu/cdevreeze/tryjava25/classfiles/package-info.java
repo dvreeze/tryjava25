@@ -21,12 +21,10 @@
  * <p>
  * One way to approach this is to parse all "relevant" class files into this API, and per {@link java.lang.classfile.ClassModel}
  * collect all bytecode instructions accessing methods and fields of other classes. After having built this "index"
- * we can reason back from method/field declarations to their use sites. Note that due to instructions like
- * "invoke-interface" and "invoke-virtual" we can not always be sure whether a method is called, but at least we can
- * be sure which concrete methods can potentially be called at runtime.
+ * we can reason back from method/field declarations to their use sites.
  * <p>
  * Note that with this approach the analysis program does not need the code to inspect to occur on its class path.
- * And, again, the legacy Java reflection API lacks the power of the "classfile" API in finding all (potential)
+ * And, again, note that the legacy Java reflection API lacks the power of the "classfile" API in finding all (potential)
  * callers of specific methods.
  *
  * @author Chris de Vreeze

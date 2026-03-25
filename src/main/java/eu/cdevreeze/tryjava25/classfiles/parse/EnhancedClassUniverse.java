@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.tryjava25.classfiles;
+package eu.cdevreeze.tryjava25.classfiles.parse;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import eu.cdevreeze.tryjava25.classfiles.data.InvokeInstructionAndContainingMethod;
+import eu.cdevreeze.tryjava25.classfiles.data.MethodAndContainingClass;
 
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.instruction.InvokeInstruction;
@@ -61,19 +63,19 @@ public record EnhancedClassUniverse(
                     .filter(m -> m.code().isPresent())
                     .map(MethodAndContainingClass::of)
                     .flatMap(m ->
-                            m.methodModel().code().orElseThrow().elementStream().flatMap(codeElem ->
+                            m.getMethodModel().code().orElseThrow().elementStream().flatMap(codeElem ->
                                     codeElem instanceof InvokeInstruction invokeInstruction ?
                                             Stream.of(new InvokeInstructionAndContainingMethod(invokeInstruction, m)) :
                                             Stream.empty()
                             )
                     )
                     .forEach(ivk -> {
-                        ClassDesc classOwningMethod = ivk.invokeInstruction().owner().asSymbol();
+                        ClassDesc classOwningMethod = ivk.getInvokeInstruction().owner().asSymbol();
 
                         if (!classUsageMapBuilder.containsKey(classOwningMethod)) {
                             classUsageMapBuilder.put(classOwningMethod, new ArrayList<>());
                         }
-                        classUsageMapBuilder.get(classOwningMethod).add(ivk.methodAndContainingClass().classDesc());
+                        classUsageMapBuilder.get(classOwningMethod).add(ivk.getMethodAndContainingClass().getClassDesc());
                     });
         }
 

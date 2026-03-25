@@ -18,8 +18,8 @@ package eu.cdevreeze.tryjava25.classfiles.console;
 
 import module java.base;
 import com.google.common.collect.ImmutableList;
-import eu.cdevreeze.tryjava25.classfiles.ClassModelParser;
-import eu.cdevreeze.tryjava25.classfiles.ClassUniverse;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassUniverse;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;

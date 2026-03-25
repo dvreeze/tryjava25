@@ -17,10 +17,10 @@
 package eu.cdevreeze.tryjava25.classfiles.console;
 
 import com.google.common.collect.ImmutableList;
-import eu.cdevreeze.tryjava25.classfiles.ClassModelParser;
-import eu.cdevreeze.tryjava25.classfiles.ClassUniverse;
-import eu.cdevreeze.tryjava25.classfiles.EnhancedClassUniverse;
-import eu.cdevreeze.tryjava25.classfiles.InvokeInstructionAndContainingMethod;
+import eu.cdevreeze.tryjava25.classfiles.data.InvokeInstructionAndContainingMethod;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassUniverse;
+import eu.cdevreeze.tryjava25.classfiles.parse.EnhancedClassUniverse;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
@@ -79,7 +79,7 @@ public class RecursiveMethodCallsFinder {
         // Recursion
         return directCallers.stream()
                 .flatMap(inv -> {
-                    MethodModel methodContainingCaller = inv.methodAndContainingClass().methodModel();
+                    MethodModel methodContainingCaller = inv.getMethodAndContainingClass().getMethodModel();
                     return Stream.concat(
                             Stream.of(inv),
                             findMethodCallsRecursively(methodContainingCaller, maxRecursionDepth - 1).stream()

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.tryjava25.classfiles;
+package eu.cdevreeze.tryjava25.classfiles.parse;
 
 import module java.base;
 import com.google.common.base.Preconditions;
@@ -126,6 +126,8 @@ public final class ClassUniverse {
 
     public ClassModel resolveClass(ClassDesc classDesc) {
         // Somehow "Optional.ofNullable(universe.get(classDesc))" did not work
+        // This might have to do with the fact that ClassModel data is lazily loaded
+
         if (universe.containsKey(classDesc)) {
             return Objects.requireNonNull(universe.get(classDesc));
         } else {

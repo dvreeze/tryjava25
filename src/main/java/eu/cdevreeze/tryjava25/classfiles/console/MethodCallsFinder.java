@@ -19,7 +19,11 @@ package eu.cdevreeze.tryjava25.classfiles.console;
 import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import eu.cdevreeze.tryjava25.classfiles.*;
+import eu.cdevreeze.tryjava25.classfiles.data.InvokeInstructionAndContainingMethod;
+import eu.cdevreeze.tryjava25.classfiles.data.MethodAndContainingClass;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassUniverse;
+import eu.cdevreeze.tryjava25.classfiles.parse.EnhancedClassUniverse;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
@@ -81,7 +85,7 @@ public class MethodCallsFinder {
                     return pkg.equals(rootPackage) || pkg.startsWith(rootPackage + ".");
                 })
                 .flatMap(cm -> findOwnInvokeInstructions(cm).stream())
-                .filter(inv -> isMatchingMethodCall(inv.invokeInstruction(), methodModel))
+                .filter(inv -> isMatchingMethodCall(inv.getInvokeInstruction(), methodModel))
                 .distinct()
                 .collect(ImmutableList.toImmutableList());
     }
@@ -98,9 +102,9 @@ public class MethodCallsFinder {
         List<MethodAndContainingClass> methods = classModel.methods().stream().map(MethodAndContainingClass::of).toList();
 
         return methods.stream()
-                .filter(m -> m.methodModel().code().isPresent())
+                .filter(m -> m.getMethodModel().code().isPresent())
                 .flatMap(m ->
-                        m.methodModel().code().orElseThrow().elementStream().flatMap(codeElem ->
+                        m.getMethodModel().code().orElseThrow().elementStream().flatMap(codeElem ->
                                 codeElem instanceof InvokeInstruction invokeInstruction ?
                                         Stream.of(new InvokeInstructionAndContainingMethod(invokeInstruction, m)) :
                                         Stream.empty()

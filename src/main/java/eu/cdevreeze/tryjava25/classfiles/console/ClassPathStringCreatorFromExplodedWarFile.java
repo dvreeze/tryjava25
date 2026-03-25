@@ -16,7 +16,7 @@
 
 package eu.cdevreeze.tryjava25.classfiles.console;
 
-import eu.cdevreeze.tryjava25.classfiles.ClassModelParser;
+import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
 
 import java.nio.file.Path;
 import java.util.Objects;
