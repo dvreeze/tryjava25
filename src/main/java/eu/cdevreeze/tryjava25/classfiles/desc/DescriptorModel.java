@@ -66,13 +66,18 @@ public class DescriptorModel {
         }
     }
 
+    public interface Instruction extends DescriptorModelData {
+
+        Opcode opcode();
+    }
+
     public record InvokeInstruction(
             Opcode opcode,
             ClassDesc owner,
             String name,
             MethodTypeDesc typeSymbol,
             boolean isInterface
-    ) implements DescriptorModelData {
+    ) implements Instruction {
 
         @Override
         public Element toXml() {
