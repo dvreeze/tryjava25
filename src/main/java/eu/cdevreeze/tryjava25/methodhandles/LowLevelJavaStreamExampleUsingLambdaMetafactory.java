@@ -24,11 +24,11 @@ import com.google.common.base.Preconditions;
  * <p>
  * See <a href="https://www.baeldung.com/java-method-handles">Java Method Handles</a>.
  * <p>
- * Here we use a LambdaMetaFactory to wrap a method as a lambda.
+ * Here we use a LambdaMetafactory to wrap a method as a lambda.
  *
  * @author Chris de Vreeze
  */
-public class LowLevelJavaStreamExampleUsingLambdaMetaFactory {
+public class LowLevelJavaStreamExampleUsingLambdaMetafactory {
 
     // A MethodHandle is immutable, but a CallSite can change its targeted MethodHandle.
     // A CallSite can never change the target's MethodType, however. Type-safety is retained, yet only at runtime.
@@ -104,7 +104,7 @@ public class LowLevelJavaStreamExampleUsingLambdaMetaFactory {
             // Now create the MethodHandle, while first setting its fixed MethodType.
             // Note that the MethodHandle is immutable. Of course this applies to its MethodType too.
             // Also note that using a MethodHandle we indeed prevent having to create and instantiate a class.
-            return privateLookup.findStatic(LowLevelJavaStreamExampleUsingLambdaMetaFactory.class, "isEven", methodType);
+            return privateLookup.findStatic(LowLevelJavaStreamExampleUsingLambdaMetafactory.class, "isEven", methodType);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -117,7 +117,7 @@ public class LowLevelJavaStreamExampleUsingLambdaMetaFactory {
             // Now create the MethodHandle, while first setting its fixed MethodType.
             // Note that the MethodHandle is immutable. Of course this applies to its MethodType too.
             // Also note that using a MethodHandle we indeed prevent having to create and instantiate a class.
-            return privateLookup.findStatic(LowLevelJavaStreamExampleUsingLambdaMetaFactory.class, "increment", methodType);
+            return privateLookup.findStatic(LowLevelJavaStreamExampleUsingLambdaMetafactory.class, "increment", methodType);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
