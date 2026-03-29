@@ -16,17 +16,13 @@
 
 package eu.cdevreeze.tryjava25.classfiles.desc;
 
+import module java.base;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
 import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
 
 import javax.xml.namespace.QName;
-import java.lang.classfile.Opcode;
-import java.lang.constant.*;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.AccessFlag;
-import java.util.stream.Stream;
 
 /**
  * "Namespace" holding the immutable thread-safe "descriptor model". The record classes in the model
@@ -107,18 +103,6 @@ public class DescriptorModel {
             DirectMethodHandleDesc bootstrapMethod,
             ImmutableList<ConstantDesc> bootstrapArgs
     ) implements Instruction {
-
-        public ImmutableSet<DirectMethodHandleDesc> directMethodHandleDescriptors() {
-            if (!bootstrapMethod().owner().equals(ClassDesc.of("java.lang.invoke", "LambdaMetafactory"))) {
-                return ImmutableSet.of();
-            }
-            if (!bootstrapMethod().methodName().equals("metafactory")) {
-                return ImmutableSet.of();
-            }
-            return bootstrapArgs().stream()
-                    .flatMap(arg -> arg instanceof DirectMethodHandleDesc mhd ? Stream.of(mhd) : Stream.empty())
-                    .collect(ImmutableSet.toImmutableSet());
-        }
 
         @Override
         public Element toXml() {
