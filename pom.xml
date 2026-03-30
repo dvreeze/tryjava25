@@ -7,12 +7,33 @@
     <groupId>eu.cdevreeze.tryjava25</groupId>
     <artifactId>tryjava25</artifactId>
     <version>0.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-    <name>tryjava25</name>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <url>https://github.com/dvreeze/tryjava25</url>
     <description>Trying out Java 25 JDK APIs (not necessarily introduced in Java 25), such as Stream Gatherers
     </description>
-    <!-- FIXME change it to the project's website -->
-    <url>http://www.example.com</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>Tryjava25 is licensed under Apache License, Version 2.0</comments>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git@github.com:dvreeze/tryjava25.git</connection>
+        <url>https://github.com/dvreeze/tryjava25.git</url>
+        <developerConnection>scm:git:git@github.com:dvreeze/tryjava25.git</developerConnection>
+    </scm>
+    <developers>
+        <developer>
+            <id>dvreeze</id>
+            <name>Chris de Vreeze</name>
+            <email>chris.de.vreeze@caiway.net</email>
+        </developer>
+    </developers>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,6 +67,7 @@
             <artifactId>logback-classic</artifactId>
             <version>1.5.25</version>
         </dependency>
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
@@ -82,4 +104,76 @@
             </plugin>
         </plugins>
     </build>
+    <!-- Release a new non-snapshot version with command "mvn clean deploy -Prelease" -->
+    <!-- Do not forget to set environment variable GPG_PASSPHRASE or a user property having the same effect -->
+    <!-- For the latter, see https://maven.apache.org/plugins/maven-gpg-plugin/sign-mojo.html#passphraseServerId -->
+    <!-- IMPORTANT! Adapt this POM file; first have a look at https://central.sonatype.org/publish/publish-portal-maven/ -->
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.10.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.12.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Also see https://central.sonatype.org/publish/requirements/gpg/ -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.8</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>1AF09C0C518250A8BB4AA6AB9FB31886D593CB2B</keyname>
+                                    <!-- No passphraseServerId -->
+                                    <!-- See https://maven.apache.org/plugins/maven-gpg-plugin/sign-mojo.html#passphraseServerId -->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
