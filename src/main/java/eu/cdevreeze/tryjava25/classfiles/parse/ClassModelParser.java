@@ -19,7 +19,6 @@ package eu.cdevreeze.tryjava25.classfiles.parse;
 import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteStreams;
 
 /**
  * Utility methods to parse class files into {@link ClassModel} objects.
@@ -51,8 +50,7 @@ public record ClassModelParser(ClassFile classFile) {
         try {
             Preconditions.checkArgument(jarEntry.getName().endsWith(".class"));
 
-            // See https://www.baeldung.com/convert-input-stream-to-array-of-bytes
-            byte[] classBytes = ByteStreams.toByteArray(jarFile.getInputStream(jarEntry));
+            byte[] classBytes = jarFile.getInputStream(jarEntry).readAllBytes();
             return classFile.parse(classBytes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -167,6 +165,12 @@ public record ClassModelParser(ClassFile classFile) {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public boolean isJavaSeClass(Class<?> javaClass) {
+        ModuleReference javaSeModuleRef = ModuleFinder.ofSystem().find("java.se").orElseThrow();
+        Set<String> packages = javaSeModuleRef.descriptor().packages();
+        return packages.contains(javaClass.getPackage().getName());
     }
 
     private boolean isClassFile(Path file) {

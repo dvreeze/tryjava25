@@ -26,8 +26,6 @@
  * Note that with this approach the analysis program does not need the code to inspect to occur on its class path.
  * And, again, note that the legacy Java reflection API lacks the power of the "classfile" API in finding all (potential)
  * callers of specific methods.
- * <p>
- * TODO Consider combining the strengths of ArchUnit and the Class-File API (maybe using JavaClass.getSource to parse ClassModel).
  *
  * @author Chris de Vreeze
  */
