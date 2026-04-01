@@ -16,22 +16,10 @@
 
 package eu.cdevreeze.tryjava25.archunitplus.parse;
 
+import module java.base;
+import com.google.common.base.Preconditions;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.Source;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.ClassModel;
-import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Parsing utility for {@link java.lang.classfile.ClassModel} instances, given {@link com.tngtech.archunit.core.domain.JavaClass}
@@ -79,5 +67,25 @@ public record ClassModelParser(ClassFile classFile) {
         ModuleReference javaSeModuleRef = ModuleFinder.ofSystem().find("java.se").orElseThrow();
         Set<String> packages = javaSeModuleRef.descriptor().packages();
         return packages.contains(javaClass.getPackage().getName());
+    }
+
+    public static String createClassPathStringFromExplodedWarDirectory(Path directory) {
+        Preconditions.checkArgument(Files.isDirectory(directory));
+        Preconditions.checkArgument(Files.isDirectory(directory.resolve("WEB-INF")));
+
+        try (Stream<Path> fileStream = Files.walk(directory)) {
+            return fileStream
+                    .filter(f -> {
+                        if (Files.isRegularFile(f) && directory.relativize(f).startsWith(Path.of("WEB-INF", "lib"))) {
+                            return f.getFileName().toString().endsWith(".jar");
+                        } else {
+                            return Files.isDirectory(f) && directory.relativize(f).equals(Path.of("WEB-INF", "classes"));
+                        }
+                    })
+                    .map(Path::toString)
+                    .collect(Collectors.joining(":"));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

@@ -32,7 +32,7 @@ public final class ClassUniverse {
 
     // Very inefficient at the moment
 
-    private final JavaClasses universe; // excludes JDK classes
+    private final JavaClasses universe;
     private final FileSystem jrtFileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
 
     public ClassUniverse(JavaClasses universe) {
@@ -59,27 +59,29 @@ public final class ClassUniverse {
     public ImmutableList<ClassModel> findAllSuperclassesOrSelf(ClassModel classModel) {
         Preconditions.checkArgument(isClassOrInterface(classModel));
 
-        Optional<ClassModel> superclassOption = classModel
-                .superclass()
-                .map(this::resolveClass);
-        // Recursive
-        return Stream.concat(
-                        Stream.of(classModel),
-                        superclassOption.map(c -> findAllSuperclassesOrSelf(c).stream()).orElse(Stream.empty())
-                )
-                .collect(ImmutableList.toImmutableList());
+        Optional<ClassModel> currentSuperclassOption = classModel.superclass().map(this::resolveClass);
+
+        ImmutableList.Builder<ClassModel> builder = ImmutableList.builder();
+
+        while (currentSuperclassOption.isPresent()) {
+            builder.add(currentSuperclassOption.orElseThrow());
+            currentSuperclassOption = currentSuperclassOption.flatMap(ClassModel::superclass).map(this::resolveClass);
+        }
+
+        return builder.build();
     }
 
     public ImmutableList<ClassModel> findAllSupertypesOrSelf(ClassModel classModel) {
         Preconditions.checkArgument(isClassOrInterface(classModel));
 
-        return Stream.concat(
-                        Stream.of(classModel),
-                        Stream.concat(
-                                findAllSuperclasses(classModel).stream(),
-                                findAllInterfaces(classModel).stream()
-                        )
-                )
+        ImmutableList.Builder<ClassModel> builder = ImmutableList.builder();
+
+        builder.add(classModel);
+        builder.addAll(findAllSuperclasses(classModel));
+        builder.addAll(findAllInterfaces(classModel));
+
+        return builder.build()
+                .stream()
                 .gather(MyGatherers.distinctBy(cm -> cm.thisClass().asSymbol()))
                 .collect(ImmutableList.toImmutableList());
     }
@@ -106,12 +108,22 @@ public final class ClassUniverse {
     private ImmutableList<ClassModel> findAllExtendedInterfacesOrSelf(ClassModel interfaceModel) {
         Preconditions.checkArgument(isInterface(interfaceModel));
 
+        ImmutableList.Builder<ClassModel> builder = ImmutableList.builder();
+
+        builder.add(interfaceModel);
+
         // Recursive
-        return Stream.concat(
-                Stream.of(interfaceModel),
-                interfaceModel.interfaces().stream()
+        builder.addAll(
+                interfaceModel.interfaces()
+                        .stream()
                         .flatMap(itf -> findAllExtendedInterfacesOrSelf(resolveClass(itf)).stream())
-        ).collect(ImmutableList.toImmutableList());
+                        .toList()
+        );
+
+        return builder.build()
+                .stream()
+                .gather(MyGatherers.distinctBy(cm -> cm.thisClass().asSymbol()))
+                .collect(ImmutableList.toImmutableList());
     }
 
     public boolean isInterface(ClassModel classModel) {
