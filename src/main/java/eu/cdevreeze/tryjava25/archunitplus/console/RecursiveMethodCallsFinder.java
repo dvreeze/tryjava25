@@ -16,22 +16,16 @@
 
 package eu.cdevreeze.tryjava25.archunitplus.console;
 
+import module java.base;
 import com.google.common.collect.ImmutableList;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import eu.cdevreeze.tryjava25.archunitplus.data.InvokeInstructionAndContainingMethod;
+import eu.cdevreeze.tryjava25.archunitplus.desc.DescriptorModel;
 import eu.cdevreeze.tryjava25.archunitplus.internal.MyGatherers;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinters;
-
-import javax.xml.namespace.QName;
-import java.lang.classfile.MethodModel;
-import java.lang.constant.MethodTypeDesc;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Stream;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.guava.GuavaModule;
 
 /**
  * Like {@link MethodCallsFinder}, but recursive, in that also caller of callers are found, etc.
@@ -112,11 +106,17 @@ public class RecursiveMethodCallsFinder {
 
         ImmutableList<InvokeInstructionAndContainingMethod> invokeInstructions = methodCallsFinder.findMethodCallsRecursively(methodModel);
 
-        Element invokeInstructionsRootElem = Nodes.elem(new QName("invokeInstructions"))
-                .plusChildren(invokeInstructions.stream().map(InvokeInstructionAndContainingMethod::toXml).collect(ImmutableList.toImmutableList()));
-
-        DocumentPrinter docPrinter = DocumentPrinters.instance();
-        String xml = docPrinter.print(invokeInstructionsRootElem);
-        System.out.println(xml);
+        JsonMapper jsonMapper = JsonMapper.builder()
+                .addModule(new GuavaModule())
+                .addModule(DescriptorModel.createSimpleModule())
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        String resultJson =
+                jsonMapper.writeValueAsString(
+                        invokeInstructions.stream()
+                                .map(InvokeInstructionAndContainingMethod::toDescriptorModel)
+                                .toList()
+                );
+        System.out.println(resultJson);
     }
 }

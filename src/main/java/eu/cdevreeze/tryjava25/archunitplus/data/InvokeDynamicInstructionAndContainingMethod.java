@@ -16,16 +16,10 @@
 
 package eu.cdevreeze.tryjava25.archunitplus.data;
 
+import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.tryjava25.archunitplus.desc.DescriptorModel;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
-
-import javax.xml.namespace.QName;
-import java.lang.classfile.MethodModel;
-import java.lang.classfile.instruction.InvokeDynamicInstruction;
-import java.lang.constant.MethodHandleDesc;
-import java.lang.constant.MethodTypeDesc;
 
 /**
  * An {@link InvokeDynamicInstruction} and its containing method as {@link MethodAndContainingClass}.
@@ -90,13 +84,5 @@ public final class InvokeDynamicInstructionAndContainingMethod {
                 ),
                 getMethodAndContainingClass().toDescriptorModel()
         );
-    }
-
-    public Element toXml() {
-        return toDescriptorModel().toXml();
-    }
-
-    public Element toXml(QName rootElementName) {
-        return toDescriptorModel().toXml(rootElementName);
     }
 }

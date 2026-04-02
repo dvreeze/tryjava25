@@ -16,15 +16,10 @@
 
 package eu.cdevreeze.tryjava25.archunitplus.data;
 
+import module java.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import eu.cdevreeze.tryjava25.archunitplus.desc.DescriptorModel;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
-
-import javax.xml.namespace.QName;
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.MethodModel;
-import java.lang.constant.ClassDesc;
 
 /**
  * A method as {@link MethodModel} and its containing class as {@link ClassDesc}.
@@ -66,13 +61,5 @@ public final class MethodAndContainingClass {
 
     public static MethodAndContainingClass of(MethodModel methodModel) {
         return new MethodAndContainingClass(methodModel);
-    }
-
-    public Element toXml() {
-        return toDescriptorModel().toXml();
-    }
-
-    public Element toXml(QName rootElementName) {
-        return toDescriptorModel().toXml(rootElementName);
     }
 }

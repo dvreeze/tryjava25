@@ -19,10 +19,12 @@ package eu.cdevreeze.tryjava25.archunitplus.desc;
 import module java.base;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
-
-import javax.xml.namespace.QName;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * "Namespace" holding the immutable thread-safe "descriptor model". The record classes in the model
@@ -36,35 +38,15 @@ public class DescriptorModel {
         // Non-instantiable
     }
 
-    public interface DescriptorModelData {
-
-        Element toXml();
-
-        Element toXml(QName rootElementName);
-    }
-
     public record Method(
             String methodName,
             MethodTypeDesc methodTypeDesc,
             ClassDesc parent,
             ImmutableSet<AccessFlag> accessFlags
-    ) implements DescriptorModelData {
-
-        @Override
-        public Element toXml() {
-            return toXml(new QName("method"));
-        }
-
-        @Override
-        public Element toXml(QName rootElementName) {
-            return Nodes.elem(rootElementName)
-                    .plusChild(Nodes.elem(new QName("methodName")).plusText(methodName()))
-                    .plusChild(Nodes.elem(new QName("methodTypeSymbol")).plusText(methodTypeDesc().descriptorString()))
-                    .plusChild(Nodes.elem(new QName("parent")).plusText(parent().descriptorString()));
-        }
+    ) {
     }
 
-    public interface Instruction extends DescriptorModelData {
+    public interface Instruction {
 
         Opcode opcode();
     }
@@ -76,21 +58,6 @@ public class DescriptorModel {
             MethodTypeDesc typeSymbol,
             boolean isInterface
     ) implements Instruction {
-
-        @Override
-        public Element toXml() {
-            return toXml(new QName("invokeInstruction"));
-        }
-
-        @Override
-        public Element toXml(QName rootElementName) {
-            return Nodes.elem(rootElementName)
-                    .plusChild(Nodes.elem(new QName("opcode")).plusText(opcode().name()))
-                    .plusChild(Nodes.elem(new QName("owner")).plusText(owner().descriptorString()))
-                    .plusChild(Nodes.elem(new QName("name")).plusText(name()))
-                    .plusChild(Nodes.elem(new QName("typeSymbol")).plusText(typeSymbol().descriptorString()))
-                    .plusChild(Nodes.elem(new QName("isInterface")).plusText(String.valueOf(isInterface())));
-        }
     }
 
     // See e.g. https://www.baeldung.com/java-invoke-dynamic
@@ -103,41 +70,6 @@ public class DescriptorModel {
             DirectMethodHandleDesc bootstrapMethod,
             ImmutableList<ConstantDesc> bootstrapArgs
     ) implements Instruction {
-
-        @Override
-        public Element toXml() {
-            return toXml(new QName("invokeDynamicInstruction"));
-        }
-
-        @Override
-        public Element toXml(QName rootElementName) {
-            var lookup = MethodHandles.lookup();
-
-            return Nodes.elem(rootElementName)
-                    .plusChild(Nodes.elem(new QName("opcode")).plusText(opcode().name()))
-                    .plusChild(Nodes.elem(new QName("name")).plusText(name()))
-                    .plusChild(Nodes.elem(new QName("typeSymbol")).plusText(typeSymbol().descriptorString()))
-                    .plusChild(Nodes.elem(new QName("bootstrapMethodToString")).plusText(bootstrapMethod().toString()))
-                    .plusChild(
-                            Nodes.elem(new QName("bootstrapMethod"))
-                                    .plusChild(Nodes.elem(new QName("kind")).plusText(bootstrapMethod().kind().name()))
-                                    .plusChild(Nodes.elem(new QName("owner")).plusText(bootstrapMethod().owner().descriptorString()))
-                                    .plusChild(Nodes.elem(new QName("isOwnerInterface")).plusText(String.valueOf(bootstrapMethod().isOwnerInterface())))
-                                    .plusChild(Nodes.elem(new QName("methodName")).plusText(bootstrapMethod().methodName()))
-                                    .plusChild(Nodes.elem(new QName("lookupDescriptor")).plusText(bootstrapMethod().lookupDescriptor()))
-                                    .plusChild(Nodes.elem(new QName("invocationType")).plusText(bootstrapMethod().invocationType().descriptorString()))
-                                    .plusChild(Nodes.elem(new QName("refKind")).plusText(String.valueOf(bootstrapMethod().refKind())))
-                    )
-                    .plusChild(Nodes.elem(new QName("bootstrapArgs"))
-                            .plusChildren(bootstrapArgs()
-                                    .stream()
-                                    .map(arg ->
-                                            Nodes.elem(new QName("arg"))
-                                                    .plusAttribute(new QName("type"), toType(arg))
-                                                    .plusText(toString(arg))
-                                    )
-                                    .collect(ImmutableList.toImmutableList())));
-        }
 
         private String toString(ConstantDesc constantDesc) {
             return switch (constantDesc) {
@@ -173,36 +105,153 @@ public class DescriptorModel {
     public record InvokeInstructionAndContainingMethod(
             InvokeInstruction invokeInstruction,
             Method containingMethod
-    ) implements DescriptorModelData {
-
-        @Override
-        public Element toXml() {
-            return toXml(new QName("invokeInstructionAndContainingMethod"));
-        }
-
-        @Override
-        public Element toXml(QName rootElementName) {
-            return Nodes.elem(rootElementName)
-                    .plusChild(invokeInstruction().toXml())
-                    .plusChild(containingMethod().toXml(new QName("methodContainingInstruction")));
-        }
+    ) {
     }
 
     public record InvokeDynamicInstructionAndContainingMethod(
             InvokeDynamicInstruction invokeInstruction,
             Method containingMethod
-    ) implements DescriptorModelData {
+    ) {
+    }
 
-        @Override
-        public Element toXml() {
-            return toXml(new QName("invokeDynamicInstructionAndContainingMethod"));
+    public static final class MethodSerializer extends StdSerializer<Method> {
+
+        public MethodSerializer() {
+            this(null);
+        }
+
+        public MethodSerializer(@Nullable Class<Method> t) {
+            super(t);
         }
 
         @Override
-        public Element toXml(QName rootElementName) {
-            return Nodes.elem(rootElementName)
-                    .plusChild(invokeInstruction().toXml())
-                    .plusChild(containingMethod().toXml(new QName("methodContainingInstruction")));
+        public void serialize(Method value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeStringProperty("methodName", value.methodName());
+            gen.writeStringProperty("methodTypeSymbol", value.methodTypeDesc().descriptorString());
+            gen.writeStringProperty("parent", value.parent().descriptorString());
+            gen.writeEndObject();
         }
+    }
+
+    public static final class InvokeInstructionSerializer extends StdSerializer<InvokeInstruction> {
+
+        public InvokeInstructionSerializer() {
+            this(null);
+        }
+
+        public InvokeInstructionSerializer(@Nullable Class<InvokeInstruction> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(InvokeInstruction value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeStringProperty("opcode", value.opcode().name());
+            gen.writeStringProperty("owner", value.owner().descriptorString());
+            gen.writeStringProperty("name", value.name());
+            gen.writeStringProperty("typeSymbol", value.typeSymbol().descriptorString());
+            gen.writeBooleanProperty("isInterface", value.isInterface());
+            gen.writeEndObject();
+        }
+    }
+
+    public static final class InvokeDynamicInstructionSerializer extends StdSerializer<InvokeDynamicInstruction> {
+
+        public InvokeDynamicInstructionSerializer() {
+            this(null);
+        }
+
+        public InvokeDynamicInstructionSerializer(@Nullable Class<InvokeDynamicInstruction> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(InvokeDynamicInstruction value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeStringProperty("opcode", value.opcode().name());
+            gen.writeStringProperty("name", value.name());
+            gen.writeStringProperty("typeSymbol", value.typeSymbol().descriptorString());
+            gen.writeStringProperty("bootstrapMethodToString", value.bootstrapMethod().toString());
+
+            gen.writeObjectPropertyStart("bootstrapMethod");
+            gen.writeStringProperty("kind", value.bootstrapMethod().kind().name());
+            gen.writeStringProperty("owner", value.bootstrapMethod().owner().descriptorString());
+            gen.writeBooleanProperty("isOwnerInterface", value.bootstrapMethod().isOwnerInterface());
+            gen.writeStringProperty("methodName", value.bootstrapMethod().methodName());
+            gen.writeStringProperty("lookupDescriptor", value.bootstrapMethod().lookupDescriptor());
+            gen.writeStringProperty("invocationType", value.bootstrapMethod().invocationType().descriptorString());
+            gen.writeNumberProperty("refKind", value.bootstrapMethod().refKind());
+            gen.writeEndObject();
+
+            gen.writeArrayPropertyStart("bootstrapArgs");
+            value.bootstrapArgs().forEach(bootstrapArg -> {
+                gen.writeStartObject();
+                gen.writeStringProperty("type", value.toType(bootstrapArg));
+                gen.writeStringProperty("value", value.toString(bootstrapArg));
+                gen.writeEndObject();
+            });
+            gen.writeEndArray();
+            gen.writeEndObject();
+        }
+    }
+
+    public static final class InvokeInstructionAndContainingMethodSerializer extends StdSerializer<InvokeInstructionAndContainingMethod> {
+
+        public InvokeInstructionAndContainingMethodSerializer() {
+            this(null);
+        }
+
+        public InvokeInstructionAndContainingMethodSerializer(@Nullable Class<InvokeInstructionAndContainingMethod> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(InvokeInstructionAndContainingMethod value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeObjectPropertyStart("invokeInstructionAndContainingMethod");
+            // Assumes availability of InvokeInstructionSerializer
+            gen.writePOJOProperty("invokeInstruction", value.invokeInstruction());
+            // Assumes availability of MethodSerializer
+            gen.writePOJOProperty("methodContainingInstruction", value.containingMethod());
+            gen.writeEndObject();
+            gen.writeEndObject();
+        }
+    }
+
+    public static final class InvokeDynamicInstructionAndContainingMethodSerializer extends StdSerializer<InvokeDynamicInstructionAndContainingMethod> {
+
+        public InvokeDynamicInstructionAndContainingMethodSerializer() {
+            this(null);
+        }
+
+        public InvokeDynamicInstructionAndContainingMethodSerializer(@Nullable Class<InvokeDynamicInstructionAndContainingMethod> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(InvokeDynamicInstructionAndContainingMethod value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeObjectPropertyStart("invokeDynamicInstructionAndContainingMethod");
+            // Assumes availability of InvokeDynamicInstructionSerializer
+            gen.writePOJOProperty("invokeDynamicInstruction", value.invokeInstruction());
+            // Assumes availability of MethodSerializer
+            gen.writePOJOProperty("methodContainingInstruction", value.containingMethod());
+            gen.writeEndObject();
+            gen.writeEndObject();
+        }
+    }
+
+    /**
+     * {@link SimpleModule} to be registered with the {@link tools.jackson.databind.json.JsonMapper}.
+     */
+    public static SimpleModule createSimpleModule() {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Method.class, new MethodSerializer());
+        module.addSerializer(InvokeInstruction.class, new InvokeInstructionSerializer());
+        module.addSerializer(InvokeDynamicInstruction.class, new InvokeDynamicInstructionSerializer());
+        module.addSerializer(InvokeInstructionAndContainingMethod.class, new InvokeInstructionAndContainingMethodSerializer());
+        module.addSerializer(InvokeDynamicInstructionAndContainingMethod.class, new InvokeDynamicInstructionAndContainingMethodSerializer());
+        return module;
     }
 }

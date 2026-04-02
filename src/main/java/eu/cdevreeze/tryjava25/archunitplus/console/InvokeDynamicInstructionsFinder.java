@@ -23,13 +23,11 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import eu.cdevreeze.tryjava25.archunitplus.data.InvokeDynamicInstructionAndContainingMethod;
 import eu.cdevreeze.tryjava25.archunitplus.data.MethodAndContainingClass;
+import eu.cdevreeze.tryjava25.archunitplus.desc.DescriptorModel;
 import eu.cdevreeze.tryjava25.archunitplus.parse.ClassUniverse;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinters;
-
-import javax.xml.namespace.QName;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.guava.GuavaModule;
 
 /**
  * Program that finds all invoke-dynamic instructions in a given class.
@@ -108,11 +106,17 @@ public class InvokeDynamicInstructionsFinder {
         ImmutableList<InvokeDynamicInstructionAndContainingMethod> invokeDynamicInstructions =
                 invokeDynamicInstructionsFinder.findInvokeDynamicInstructions(parseClassDesc(className));
 
-        Element invokeInstructionsRootElem = Nodes.elem(new QName("invokeDynamicInstructions"))
-                .plusChildren(invokeDynamicInstructions.stream().map(InvokeDynamicInstructionAndContainingMethod::toXml).collect(ImmutableList.toImmutableList()));
-
-        DocumentPrinter docPrinter = DocumentPrinters.instance();
-        String xml = docPrinter.print(invokeInstructionsRootElem);
-        System.out.println(xml);
+        JsonMapper jsonMapper = JsonMapper.builder()
+                .addModule(new GuavaModule())
+                .addModule(DescriptorModel.createSimpleModule())
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        String resultJson =
+                jsonMapper.writeValueAsString(
+                        invokeDynamicInstructions.stream()
+                                .map(InvokeDynamicInstructionAndContainingMethod::toDescriptorModel)
+                                .toList()
+                );
+        System.out.println(resultJson);
     }
 }
