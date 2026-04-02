@@ -17,15 +17,19 @@
 package eu.cdevreeze.tryjava25.classfiles.console;
 
 import module java.base;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassUniverse;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Element;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.Nodes;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinter;
-import eu.cdevreeze.yaidom4j.dom.immutabledom.jaxpinterop.DocumentPrinters;
-
-import javax.xml.namespace.QName;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.datatype.guava.GuavaModule;
 
 /**
  * Program that finds all supertypes (or self) of an interface or class.
@@ -39,6 +43,16 @@ import javax.xml.namespace.QName;
  * @author Chris de Vreeze
  */
 public class SupertypesFinder {
+
+    public record SupertypesOrSelfResult(ClassDesc startType, ImmutableList<ClassDesc> superTypesOrSelf) {
+
+        public static SupertypesOrSelfResult from(ClassDesc startType, ImmutableList<ClassModel> superTypesOrSelf) {
+            return new SupertypesOrSelfResult(
+                    startType,
+                    superTypesOrSelf.stream().map(v -> v.thisClass().asSymbol()).collect(ImmutableList.toImmutableList())
+            );
+        }
+    }
 
     private final ClassUniverse classUniverse;
 
@@ -75,16 +89,51 @@ public class SupertypesFinder {
 
         ImmutableList<ClassModel> supertypesOrSelf = supertypesFinder.findAllSupertypesOrSelf(className);
 
-        Element rootElem = Nodes.elem(new QName("superTypesOrSelf"))
-                .plusAttribute(new QName("type"), className)
-                .plusChildren(
-                        supertypesOrSelf.stream()
-                                .map(tpe -> Nodes.elem("type").plusText(tpe.thisClass().asSymbol().descriptorString()))
-                                .collect(ImmutableList.toImmutableList())
-                );
+        int idx = className.lastIndexOf('.');
+        Preconditions.checkState(idx > 0);
+        String packageName = className.substring(0, idx);
+        String simpleClassName = className.substring(idx + 1);
+        ClassDesc startType = ClassDesc.of(packageName, simpleClassName);
+        SupertypesOrSelfResult supertypesOrSelfResult = SupertypesOrSelfResult.from(startType, supertypesOrSelf);
 
-        DocumentPrinter docPrinter = DocumentPrinters.instance();
-        String xml = docPrinter.print(rootElem);
-        System.out.println(xml);
+        JsonMapper jsonMapper = JsonMapper.builder()
+                .addModule(new GuavaModule())
+                .addModule(createSimpleModule())
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        String resultJson = jsonMapper.writeValueAsString(supertypesOrSelfResult);
+        System.out.println(resultJson);
+    }
+
+    private static final class SupertypesOrSelfResultSerializer extends StdSerializer<SupertypesOrSelfResult> {
+
+        public SupertypesOrSelfResultSerializer() {
+            this(null);
+        }
+
+        public SupertypesOrSelfResultSerializer(@Nullable Class<SupertypesOrSelfResult> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(SupertypesOrSelfResult value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeStringProperty("startType", value.startType().descriptorString());
+            gen.writeArrayPropertyStart("superTypesOrSelf");
+            value.superTypesOrSelf().forEach(superTypeOrSelf -> {
+                gen.writeString(superTypeOrSelf.descriptorString());
+            });
+            gen.writeEndArray();
+            gen.writeEndObject();
+        }
+    }
+
+    /**
+     * {@link SimpleModule} to be registered with the {@link tools.jackson.databind.json.JsonMapper}.
+     */
+    private static SimpleModule createSimpleModule() {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(SupertypesOrSelfResult.class, new SupertypesOrSelfResultSerializer());
+        return module;
     }
 }

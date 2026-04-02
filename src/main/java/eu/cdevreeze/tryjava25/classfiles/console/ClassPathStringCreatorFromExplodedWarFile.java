@@ -16,10 +16,8 @@
 
 package eu.cdevreeze.tryjava25.classfiles.console;
 
+import module java.base;
 import eu.cdevreeze.tryjava25.classfiles.parse.ClassModelParser;
-
-import java.nio.file.Path;
-import java.util.Objects;
 
 /**
  * Simple program creating a classpath string from an exploded WAR file directory. That directory is the
