@@ -20,7 +20,7 @@ import module java.base;
 import com.google.common.base.Preconditions;
 
 /**
- * Low level Java {@link Stream} example, creating lambdas "the hard way".
+ * Low level Java {@link Stream} example, creating "lambdas" "the hard way".
  * <p>
  * See <a href="https://www.baeldung.com/java-method-handles">Java Method Handles</a>.
  * <p>
@@ -51,6 +51,7 @@ public class LowLevelJavaStreamExampleUsingCallSites {
         // "Faking" dynamically created lambda, based on a MethodHandle
         IntPredicate isOddPredicate = n -> {
             try {
+                // Quite inefficient, because the MethodHandle invocation does not return a reusable IntPredicate
                 return (boolean) isEvenCallSite.dynamicInvoker().invokeExact(n);
             } catch (Throwable e) {
                 throw new RuntimeException(e);
@@ -60,6 +61,7 @@ public class LowLevelJavaStreamExampleUsingCallSites {
         // "Faking" dynamically created lambda, based on a MethodHandle
         IntUnaryOperator incrementUnaryOperator = n -> {
             try {
+                // Quite inefficient, because the MethodHandle invocation does not return a reusable IntUnaryOperator
                 return (int) incrementCallSite.dynamicInvoker().invokeExact(n);
             } catch (Throwable e) {
                 throw new RuntimeException(e);
