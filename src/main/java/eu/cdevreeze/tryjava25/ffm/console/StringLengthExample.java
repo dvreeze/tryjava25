@@ -83,9 +83,9 @@ public class StringLengthExample {
         return strSegment;
     }
 
-    public static long getStringLength(MethodHandle strLenMethod, MemorySegment strSegment) {
+    public static long getStringLength(MethodHandle strLenMethod, MemorySegment strArgument) {
         try {
-            return (long) strLenMethod.invokeExact(strSegment);
+            return (long) strLenMethod.invokeExact(strArgument);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
