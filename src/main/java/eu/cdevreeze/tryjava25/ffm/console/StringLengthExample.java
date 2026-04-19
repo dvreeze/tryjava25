@@ -51,14 +51,16 @@ public class StringLengthExample {
 
     public static long getStringLength(String str) {
         Linker linker = Linker.nativeLinker();
+
+        SymbolLookup symbolLookup = linker.defaultLookup();
         // See https://en.cppreference.com/c/string/byte/strlen
-        MemorySegment strLenMemorySegment = linker.defaultLookup().find("strlen").orElseThrow();
+        MemorySegment strLenSymbol = symbolLookup.find("strlen").orElseThrow();
 
         // The string argument is a pointer to (byte) char (the first char in the array), so an ADDRESS
         FunctionDescriptor strLenDescriptor = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS);
 
         // Finally, we have the native function to call as a MethodHandle.
-        MethodHandle strLenMethod = linker.downcallHandle(strLenMemorySegment, strLenDescriptor);
+        MethodHandle strLenMethod = linker.downcallHandle(strLenSymbol, strLenDescriptor);
 
         // Let's now turn to the function argument, as a MemorySegment that the function expects.
 
