@@ -26,6 +26,7 @@ import java.util.Objects;
  * The length of the string in this context is the length in bytes of the string in UTF-8 encoding.
  * <p>
  * See for example <a href="https://www.baeldung.com/java-foreign-memory-access">Java Foreign Memory Access</a>.
+ * To a large extent, this program copied the native function call code in that article.
  * <p>
  * To run this program, enable native access with "--enable-native-access=ALL-UNNAMED".
  *
@@ -55,32 +56,18 @@ public class StringLengthExample {
 
         // The string argument is a pointer to (byte) char (the first char in the array), so an ADDRESS
         FunctionDescriptor strLenDescriptor = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS);
+
+        // Finally, we have the native function to call as a MethodHandle.
         MethodHandle strLenMethod = linker.downcallHandle(strLenMemorySegment, strLenDescriptor);
 
+        // Let's now turn to the function argument, as a MemorySegment that the function expects.
+
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment strSegment = convertStringToNullTerminatedUTF8EncodedByteArray(str, arena);
+            // The string is converted to a UTF-8 encoded null-terminated string, to be passed to the strlen function
+            MemorySegment strArgumentSegment = arena.allocateFrom(str);
 
-            return getStringLength(strLenMethod, strSegment);
+            return getStringLength(strLenMethod, strArgumentSegment);
         }
-    }
-
-    private static MemorySegment convertStringToNullTerminatedUTF8EncodedByteArray(String str, Arena arena) {
-        byte[] byteArray = str.getBytes(StandardCharsets.UTF_8);
-        byte[] byteArrayWithNull = new byte[byteArray.length + 1];
-        System.arraycopy(byteArray, 0, byteArrayWithNull, 0, byteArray.length);
-        // Null-terminated string as UTF-8 encoded byte array
-        byteArrayWithNull[byteArrayWithNull.length - 1] = (byte) NULL_CHAR;
-
-        MemorySegment strSegment = arena.allocate(byteArrayWithNull.length);
-        MemorySegment.copy(
-                byteArrayWithNull,
-                0,
-                strSegment,
-                ValueLayout.JAVA_BYTE,
-                0,
-                byteArrayWithNull.length
-        );
-        return strSegment;
     }
 
     public static long getStringLength(MethodHandle strLenMethod, MemorySegment strArgument) {
