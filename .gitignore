@@ -31,6 +31,3 @@ target/
 
 *.jfr
 .jqwik-database
-
-# TODO Fix
-HeapMemoryLayoutExample.java
