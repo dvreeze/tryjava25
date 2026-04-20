@@ -16,10 +16,7 @@
 
 package eu.cdevreeze.tryjava25.ffm.console;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import module java.base;
 
 /**
  * Simple program getting the string length of a given string, using the {@link java.lang.foreign} API.
@@ -33,8 +30,6 @@ import java.util.Objects;
  * @author Chris de Vreeze
  */
 public class StringLengthExample {
-
-    private static final char NULL_CHAR = '\0';
 
     static void main(String... args) {
         Objects.checkIndex(0, args.length);
@@ -50,9 +45,9 @@ public class StringLengthExample {
     }
 
     public static long getStringLength(String str) {
-        Linker linker = Linker.nativeLinker();
+        Linker nativeLinker = Linker.nativeLinker();
 
-        SymbolLookup symbolLookup = linker.defaultLookup();
+        SymbolLookup symbolLookup = nativeLinker.defaultLookup();
         // See https://en.cppreference.com/c/string/byte/strlen
         MemorySegment strLenSymbol = symbolLookup.find("strlen").orElseThrow();
 
@@ -60,7 +55,7 @@ public class StringLengthExample {
         FunctionDescriptor strLenDescriptor = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS);
 
         // Finally, we have the native function to call as a MethodHandle.
-        MethodHandle strLenMethod = linker.downcallHandle(strLenSymbol, strLenDescriptor);
+        MethodHandle strLenMethod = nativeLinker.downcallHandle(strLenSymbol, strLenDescriptor);
 
         // Let's now turn to the function argument, as a MemorySegment that the function expects.
 
