@@ -31,3 +31,6 @@ target/
 
 *.jfr
 .jqwik-database
+
+jextract-25
+
