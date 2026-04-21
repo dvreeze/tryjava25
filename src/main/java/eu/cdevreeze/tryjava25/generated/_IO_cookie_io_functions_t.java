@@ -29,10 +29,10 @@ public class _IO_cookie_io_functions_t {
     }
 
     private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
-        stdio_h.C_POINTER.withName("read"),
-        stdio_h.C_POINTER.withName("write"),
-        stdio_h.C_POINTER.withName("seek"),
-        stdio_h.C_POINTER.withName("close")
+        stdio_string.C_POINTER.withName("read"),
+        stdio_string.C_POINTER.withName("write"),
+        stdio_string.C_POINTER.withName("seek"),
+        stdio_string.C_POINTER.withName("close")
     ).withName("_IO_cookie_io_functions_t");
 
     /**

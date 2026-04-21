@@ -31,10 +31,10 @@ public final class cookie_read_function_t {
     }
 
     private static final FunctionDescriptor $DESC = FunctionDescriptor.of(
-        stdio_h.C_LONG,
-        stdio_h.C_POINTER,
-        stdio_h.C_POINTER,
-        stdio_h.C_LONG
+        stdio_string.C_LONG,
+        stdio_string.C_POINTER,
+        stdio_string.C_POINTER,
+        stdio_string.C_LONG
     );
 
     /**
@@ -44,7 +44,7 @@ public final class cookie_read_function_t {
         return $DESC;
     }
 
-    private static final MethodHandle UP$MH = stdio_h.upcallHandle(cookie_read_function_t.Function.class, "apply", $DESC);
+    private static final MethodHandle UP$MH = stdio_string.upcallHandle(cookie_read_function_t.Function.class, "apply", $DESC);
 
     /**
      * Allocates a new upcall stub, whose implementation is defined by {@code fi}.

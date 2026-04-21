@@ -13,10 +13,11 @@ To generate native bindings in Java for stdio.h, use the following command or so
 ```bash
 # From the root of the project, assuming jextract has been installed as described above
 ./jextract/jextract-25/bin/jextract \
+  --header-class-name stdio_string \
   --include-dir /usr/include \
   --output src/main/java \
   --target-package eu.cdevreeze.tryjava25.generated \
-  "<stdio.h>"
+  "<stdio.h>" "<string.h>"
 ```
 
 For more information on how to use "jextract", see [jextract](https://github.com/openjdk/jextract/blob/master/doc/GUIDE.md). We can also find many examples there, to

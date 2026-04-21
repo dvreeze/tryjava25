@@ -19,7 +19,7 @@ package eu.cdevreeze.tryjava25.ffm.console;
 import module java.base;
 import com.google.common.base.Preconditions;
 
-import static eu.cdevreeze.tryjava25.generated.stdio_h.*;
+import static eu.cdevreeze.tryjava25.generated.stdio_string.*;
 
 /**
  * Simple program performing native file I/O, using the {@link java.lang.foreign} API and output of the "jextract" tool.
@@ -60,6 +60,8 @@ public class FileIOExample {
      * <p>
      * To avoid making mistakes against the proper use of native memory in the native function calls,
      * we need to have a good look at the native function contracts in the C header files that declare those functions.
+     * <p>
+     * Maybe it is a bit strange to "write C in Java", but as a small experiment with Java/C/FFM it is educational.
      */
     public static int getLineCount(Path path, Arena arena) {
         MemorySegment file = null;
@@ -80,7 +82,9 @@ public class FileIOExample {
             // The fgets call returns a pointer to (1 byte) char
             // See https://en.cppreference.com/c/io/fgets
             while (!fgets(line, bufferLength, file).equals(MemorySegment.NULL)) {
-                if (line.getString(0).contains("\n")) { // Inefficient to turn this into a Java String
+                int newline = 10;
+                // See https://en.cppreference.com/c/string/byte/strchr
+                if (!strchr(line, newline).equals(MemorySegment.NULL)) {
                     numberOfLines++;
                 }
             }

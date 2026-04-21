@@ -30,7 +30,7 @@ public class __mbstate_t {
     }
 
     private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
-        stdio_h.C_INT.withName("__count"),
+        stdio_string.C_INT.withName("__count"),
         __mbstate_t.__value.layout().withName("__value")
     ).withName("$anon$13:9");
 
@@ -100,8 +100,8 @@ public class __mbstate_t {
         }
 
         private static final GroupLayout $LAYOUT = MemoryLayout.unionLayout(
-            stdio_h.C_INT.withName("__wch"),
-            MemoryLayout.sequenceLayout(4, stdio_h.C_CHAR).withName("__wchb")
+            stdio_string.C_INT.withName("__wch"),
+            MemoryLayout.sequenceLayout(4, stdio_string.C_CHAR).withName("__wchb")
         ).withName("$anon$16:3");
 
         /**

@@ -27,7 +27,7 @@ public class _G_fpos_t {
     }
 
     private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
-        stdio_h.C_LONG.withName("__pos"),
+        stdio_string.C_LONG.withName("__pos"),
         __mbstate_t.layout().withName("__state")
     ).withName("_G_fpos_t");
 

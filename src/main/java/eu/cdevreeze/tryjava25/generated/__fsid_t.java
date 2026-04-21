@@ -26,7 +26,7 @@ public class __fsid_t {
     }
 
     private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
-        MemoryLayout.sequenceLayout(2, stdio_h.C_INT).withName("__val")
+        MemoryLayout.sequenceLayout(2, stdio_string.C_INT).withName("__val")
     ).withName("$anon$155:12");
 
     /**

@@ -12,9 +12,9 @@ import java.util.stream.*;
 import static java.lang.foreign.ValueLayout.*;
 import static java.lang.foreign.MemoryLayout.PathElement.*;
 
-public class stdio_h$shared {
+public class stdio_string$shared {
 
-    stdio_h$shared() {
+    stdio_string$shared() {
         // Should not be called directly
     }
 
