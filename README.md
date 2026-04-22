@@ -8,16 +8,21 @@ Trying out Java 25 JDK APIs (not necessarily introduced in Java 25), such as Str
 Some programs experimented with the FFM API (Java 22+). For some of these programs the "jextract" tool was used.
 For regular Linux platforms: download "jextract", and extract (with "tar xvfz") the "gz" file under the jextract folder.
 
-To generate native bindings in Java for stdio.h, use the following command or something similar (for Linux):
+To generate native bindings in Java for stdio.h and string.h, use the following commands or something similar (for Linux):
 
 ```bash
 # From the root of the project, assuming jextract has been installed as described above
 ./jextract/jextract-25/bin/jextract \
-  --header-class-name stdio_string \
   --include-dir /usr/include \
   --output src/main/java \
-  --target-package eu.cdevreeze.tryjava25.generated \
-  "<stdio.h>" "<string.h>"
+  --target-package eu.cdevreeze.tryjava25.generated.stdio_h \
+  "<stdio.h>"
+
+./jextract/jextract-25/bin/jextract \
+  --include-dir /usr/include \
+  --output src/main/java \
+  --target-package eu.cdevreeze.tryjava25.generated.string_h \
+  "<string.h>"
 ```
 
 For more information on how to use "jextract", see [jextract](https://github.com/openjdk/jextract/blob/master/doc/GUIDE.md). We can also find many examples there, to

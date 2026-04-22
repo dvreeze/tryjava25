@@ -19,7 +19,8 @@ package eu.cdevreeze.tryjava25.ffm.console;
 import module java.base;
 import com.google.common.base.Preconditions;
 
-import static eu.cdevreeze.tryjava25.generated.stdio_string.*;
+import static eu.cdevreeze.tryjava25.generated.stdio_h.stdio_h.*;
+import static eu.cdevreeze.tryjava25.generated.string_h.string_h.strchr;
 
 /**
  * Simple program performing native file I/O, using the {@link java.lang.foreign} API and output of the "jextract" tool.
