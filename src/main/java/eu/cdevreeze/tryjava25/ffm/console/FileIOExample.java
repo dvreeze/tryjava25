@@ -82,7 +82,7 @@ public class FileIOExample {
             // The fgets call returns a pointer to (1 byte) char
             // See https://en.cppreference.com/c/io/fgets
             while (!fgets(line, bufferLength, file).equals(MemorySegment.NULL)) {
-                int newline = 10;
+                int newline = '\n'; // think: (int) '\n'
                 // See https://en.cppreference.com/c/string/byte/strchr
                 if (!strchr(line, newline).equals(MemorySegment.NULL)) {
                     numberOfLines++;
